@@ -20,10 +20,11 @@ octave-workspace
 
 # Simulink autosave extension
 *.autosave
-A
-A
-A
-A
-A
-A
+
+# Do not include old files in the git repo.
+oldScripts/
+
+
+
+
 
