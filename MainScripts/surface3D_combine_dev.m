@@ -36,6 +36,7 @@ PARAMS = {};
 
 PARAMS.softVersion = 'surface3D_combine_v0p12.m';
 
+% Set the following switches to false if not desired (true if desired)
 PARAMS.doDispBell = true; % display the 2D segmentation
 PARAMS.doDispMesh = true; % display the 3D mesh
 PARAMS.doDispOverlay = true; % display the overlayed 2D seg and 3D mesh

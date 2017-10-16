@@ -20,7 +20,7 @@ function cellContour2D = findContour(contour2Dpos,bmethod,PARAMS)
 % - cellContour2D.Line: paired vertices matrix to infer the pixel
 % connections -> deleted
 % - cellContour2D.Vertices: XY sorted vertices -> deleted
-% - cellContour2D.VerticesOrdered: XY sorted vertices in "CW" order
+% - cellContour2D.cellCt: XY sorted vertices in "CW" order
 
 fprintf('Recreating the cellular contours\n');
 
@@ -69,7 +69,7 @@ for bioCell = 1:length(contour2Dpos) % for all cells
             
         case 'bwboundary'
             [boundaries,~] = bwboundaries(miniImg,'noholes');
-            cellContour2D{bioCell}.VerticesOrdered = boundaries{1}+...
+            cellContour2D{bioCell}.cellCt = boundaries{1}+...
                 min(contour2Dpos{bioCell})-2; % replace in full image % -1 for start table at 1 and -1 for appened lines
             
         case 'mask2poly'
@@ -79,7 +79,7 @@ for bioCell = 1:length(contour2Dpos) % for all cells
             polyCell(:,1) = polyCell(:,2);
             polyCell(:,2) = polyCell(:,3);
             polyCell(:,3) = [];
-            cellContour2D{bioCell}.VerticesOrdered = polyCell+...
+            cellContour2D{bioCell}.cellCt = polyCell+...
                 min(contour2Dpos{bioCell})-2; % replace in full image % -1 for start table at 1 and -1 for appened lines
         
         otherwise
@@ -100,10 +100,10 @@ for bioCell = 1:length(contour2Dpos) % for all cells
                 end
                 Ori = find(cellContour2D{bioCell}.Lines(:,1)==Dest);
             end
-            cellContour2D{bioCell}.VerticesOrdered = tempVert;
+            cellContour2D{bioCell}.cellCt = tempVert;
             clear tempVert
     end
-    cellContour2D{bioCell}.VerticesOrdered = cellContour2D{bioCell}.VerticesOrdered*PARAMS.imSettings.latPixSize; % scale back to µm
+    cellContour2D{bioCell}.cellCt = cellContour2D{bioCell}.cellCt*PARAMS.imSettings.latPixSize; % scale back to µm
 end
 cellContour2D = cellContour2D';
 
