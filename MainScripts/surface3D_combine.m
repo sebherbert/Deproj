@@ -34,7 +34,7 @@ PARAMS = {};
 
 %%%%%%%%%%%%%%%%%%%%%% PARAMETERS %%%%%%%%%%%%%%%%%%%%%% 
 
-PARAMS.softVersion = 'surface3D_combine_v0p12.m';
+PARAMS.softVersion = 'surface3D_combine_v0p13.m';
 
 PARAMS.doDispBell = true; % display the 2D segmentation
 PARAMS.doDispMesh = true; % display the 3D mesh
@@ -47,8 +47,8 @@ PARAMS.imSettings.z = 103; % image size in Z (in px)
 % PARAMS.imSettings.latPixSize = 0.2076; % Lateral pixel size (in um) % set in dataSeg
 PARAMS.imSettings.axPixSize = 0.5; % Axial pixel size (in um)
 
-PARAMS.maxFaces = 3000; % set he maximum number of faces for the mesh (will use the reducepatch
-% function if the number is too high
+PARAMS.tiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
+PARAMS.maxFaces = 10000; % If need be, reduce the maximum number of faces for the mesh
 
 PARAMS.maxTolAreaRatio = 0.001; % set the maximum tolerance for the ratio faceArea / cellArea
 
@@ -56,15 +56,15 @@ PARAMS.maxTolAreaRatio = 0.001; % set the maximum tolerance for the ratio faceAr
 
 PARAMS.outputFolder = uigetdir(pwd,'Select the output folder');
 cd(PARAMS.outputFolder)
-PARAMS.meshLoc = uipickfiles( 'Prompt','Select the mesh file (.ply or .py format)',...
-    'FilterSpec','*.ply','out','ch','num',1);
+PARAMS.curvLoc = uipickfiles( 'Prompt','Select the curve file (.ply or .tif format)',...
+    'REFilter','\.ply$|\.tif$','out','ch','num',1);
 PARAMS.segLoc = uipickfiles( 'Prompt','Select the 2D segmented file (.mat format)',...
     'FilterSpec','*.mat','out','ch','num',1);
 
 
 
 % % GUI call bypass
-% PARAMS.meshLoc =...
+% PARAMS.curvLoc =...
 %     'D:\sherbert\project1\newMesh_\processedMesh_bin.ply';
 % PARAMS.segLoc = ...
 %     'D:\sherbert\project1\testSeg2D\Bellaiche_output\SIA_161210_gfapnlsg_Backup_001.mat';
@@ -73,23 +73,21 @@ PARAMS.segLoc = uipickfiles( 'Prompt','Select the 2D segmented file (.mat format
 %% Load 2D segmetation from Bellaiche soft and resize/flip
 [dataSeg, dataCells, PARAMS] = loadSeg(PARAMS);
 
-%% Load 3D mesh from MorphographX soft
-% to be a GUI later
-dataMesh = loadMesh(PARAMS);
-
+%% Load sample curvature
+dataCurv = loadCurve(PARAMS);
         
 %% plots of 2D segmentation and Mesh
 % Plot Bellaiche data if asked
 if PARAMS.doDispBell % only plots the light version (nodes only)
     figure
-    plotSeg(dataSeg.SIDES.vertices,dataSeg.VERTICES.XYs,PARAMS);
+    plotSeg(dataSeg.SIDES.vertices, dataSeg.VERTICES.XYs, PARAMS);
     axis equal
     savefig(gcf,[PARAMS.outputFolder filesep 'seg2D']);
 end
 % Plot Mesh data if asked
 if PARAMS.doDispMesh
     figure
-    plotMesh(dataMesh,PARAMS);
+    plotMesh(dataCurv,PARAMS);
     axis equal
     savefig(gcf,[PARAMS.outputFolder filesep 'mesh3D']);
 end
@@ -99,7 +97,7 @@ if PARAMS.doDispOverlay
     figure
     hold on
     plotSeg(dataSeg.SIDES.vertices,dataSeg.VERTICES.XYs,PARAMS);
-    plotMesh(dataMesh,PARAMS);
+    plotMesh(dataCurv,PARAMS);
     axis equal
     title('2D segmentation and 3D mesh combined');
     savefig(gcf,[PARAMS.outputFolder filesep 'seg2D_mesh3D']);
@@ -114,7 +112,7 @@ end
 %% Restructure projected cells to proper contours
 % Find contiguous points of each cell/polygon countour
 % Creates the edges for later use
-dataCells.cellContour2D = findContour(dataCells.contourPo2D,'bwboundary',PARAMS);
+dataCells.cellContour2D = findContour(dataCells.contourPo2D, 'bwboundary', PARAMS);
 
 % % create triangulated areas Check with polygon intersection instead
 % dataCells = polygon2surface(dataCells);
@@ -123,33 +121,33 @@ dataCells.cellContour2D = findContour(dataCells.contourPo2D,'bwboundary',PARAMS)
 
 
 %% Find which faces of the mesh are relevant for which cell of the projected seg
-[dataCells, dataMesh] = cell2face(dataMesh,dataCells);
+[dataCells, dataCurv] = cell2face(dataCurv, dataCells);
 
 %% Calculate the surface of each cell
-dataCells = cellSurface(dataMesh,dataCells);
+dataCells = cellSurface(dataCurv, dataCells);
 
 %% finding bellaiche sides and faces connections
-dataCells = side2face(dataCells,dataSeg,dataMesh);
+dataCells = side2face(dataCells, dataSeg, dataCurv);
 
 %% Sort contour pixels by face and biological cell
-dataCells = contour2face(dataCells,dataMesh);
+dataCells = contour2face(dataCells, dataCurv);
 
 %% Clear over and under covered cells
-dataCells = checkCoverage(dataCells,dataMesh,dataSeg,PARAMS);
+dataCells = checkCoverage(dataCells, dataCurv, dataSeg, PARAMS);
 % check polygon of cell - polygon of faces result => if ~empty => delete
 
 %% Projected both the cell contour and the edges on the mesh
-[dataCells, dataMesh] = projectOnMesh(dataCells, dataSeg, dataMesh, PARAMS);
+[dataCells, dataCurv] = projectOnMesh(dataCells, dataSeg, dataCurv, PARAMS);
 
 %% Recalculate the fit to ellipse 
-dataCells = cell2ellipse(dataCells,dataMesh,PARAMS);
+dataCells = cell2ellipse(dataCells, dataCurv, PARAMS);
 
 %% Create a table output
-[tableOutputDeproj, tableOutputBell] = formatTableOuputSurfaceCombine(dataCells,dataSeg);
+[tableOutputDeproj, tableOutputBell] = formatTableOuputSurfaceCombine(dataCells, dataSeg);
 
 %% Saving output
 save([PARAMS.outputFolder filesep 'deprojectedData.mat'],...
-    'dataCells','dataMesh','dataSeg','PARAMS');
+    'dataCells','dataCurv','dataSeg','PARAMS');
 
 % save([PARAMS.outputFolder filesep 'deprojectedTable.mat'],'tableOutputDeproj');
 save('deprojectedTable.mat','tableOutputDeproj');
@@ -167,31 +165,80 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%     END MAIN FUNCTION     %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%% 
 
-function dataMesh = loadMesh(PARAMS)
+function dataCurv = loadCurve(PARAMS)
+%% Load as a mesh the curvature of the sample form a mesh of from a 2D elevation map
+
+if endsWith(PARAMS.curvLoc, '.ply')
+    % Load a 3D mesh produced by the MorphographX soft
+    dataCurv = loadMesh(PARAMS);
+elseif endsWith( PARAMS.curvLoc, '.tif' )
+    % Load an elevation map such as produced by LocalZProj transformed to a
+    % mesh format
+    dataCurv = loadElev(PARAMS);
+end
+
+% Calculate normals of the faces
+[dataCurv.normalV,dataCurv.normalF] = compute_normal(dataCurv.vertices,dataCurv.faces);
+
+end
+
+
+function dataCurv = loadElev(PARAMS)
+%% Load a 2D elevation map and format it as a mesh
+fprintf('Loading elevation map\n');
+tiffImage = tiffread2(PARAMS.curvLoc);
+
+% Calculate the scaling factor
+scalingFactor = ceil( tiffImage.width*tiffImage.height / PARAMS.tiffImSize);
+
+% import and scale the image data
+z = double(tiffImage.data);
+z = imresize( z, sqrt(1/scalingFactor) );
+[x,y] = meshgrid(1:size(z,2),1:size(z,1));
+pointMat = [reshape(x,[],1),reshape(y,[],1),reshape(z,[],1)];
+pointMat(pointMat(:,3)<=1, :) = []; % => get rid of empty positions
+
+% Scale to spatial units
+pointMat(:,1) = pointMat(:,1) * (PARAMS.imSettings.latPixSize * sqrt(scalingFactor) );
+pointMat(:,2) = pointMat(:,2) * (PARAMS.imSettings.latPixSize * sqrt(scalingFactor) );
+pointMat(:,3) = pointMat(:,3) * PARAMS.imSettings.axPixSize;
+
+% Calculate 2D mesh
+tri = delaunay(pointMat(:,1),pointMat(:,2));
+% Create fv struct and populate it
+dataCurv = {};
+dataCurv.faces = tri;
+dataCurv.vertices = pointMat; % => vertices are pushed in 3D
+dataCurv = reducepatch(dataCurv,PARAMS.maxFaces,'verbose'); % reduce mesh size to a more
+[dataCurv.normalV,dataCurv.normalF] = compute_normal(dataCurv.vertices,dataCurv.faces);
+
+% patch('Faces', fv.faces, 'Vertices', fv.vertices, 'FaceVertexCData', fv.vertices(:,3), ...
+%     'FaceColor', 'interp', 'LineStyle', 'None');
+
+end
+
+function dataCurv = loadMesh(PARAMS)
 
 % load data
 % Add we GUI after original test phase
 fprintf('Loading mesh file\n');
-[dataMesh.vertices,dataMesh.faces] = read_ply(PARAMS.meshLoc);
+[dataCurv.vertices,dataCurv.faces] = read_ply(PARAMS.curvLoc);
 
  
 % Correct the centering of the image (force 0,0,0 in bottom left)
-dataMesh.vertices = bsxfun(@plus,dataMesh.vertices,[PARAMS.imSettings.x*PARAMS.imSettings.latPixSize...
+dataCurv.vertices = bsxfun(@plus,dataCurv.vertices,[PARAMS.imSettings.x*PARAMS.imSettings.latPixSize...
     PARAMS.imSettings.y*PARAMS.imSettings.latPixSize...
     PARAMS.imSettings.z*PARAMS.imSettings.axPixSize]/2);
 
 % Flip in Y the image for overlay with the 2D segmentation
-dataMesh.vertices(:,2) = abs(bsxfun(@minus,dataMesh.vertices(:,2),...
+dataCurv.vertices(:,2) = abs(bsxfun(@minus,dataCurv.vertices(:,2),...
     PARAMS.imSettings.y*PARAMS.imSettings.latPixSize));
 
 % If the number of faces is too high than reduce them
-if length(dataMesh.faces)>PARAMS.maxFaces
+if length(dataCurv.faces)>PARAMS.maxFaces
     fprintf('Reducing the number of faces in the Mesh\n');
-    dataMesh = reducepatch(dataMesh,PARAMS.maxFaces,'verbose');    
+    dataCurv = reducepatch(dataCurv,PARAMS.maxFaces,'verbose');    
 end
-
-% Calculate normals of the faces
-[dataMesh.normalV,dataMesh.normalF] = compute_normal(dataMesh.vertices,dataMesh.faces);
 
 end
 
@@ -273,16 +320,16 @@ axis([0 PARAMS.imSettings.x*PARAMS.imSettings.latPixSize ...
     0 PARAMS.imSettings.y*PARAMS.imSettings.latPixSize]);
 end
 
-function patchHandle = plotMesh(dataMesh,PARAMS)
+function patchHandle = plotMesh(dataCurv,PARAMS)
 % Display mesh with z info encoded in colormap with transparency
 
-patchHandle = patch('Faces',dataMesh.faces,'Vertices',dataMesh.vertices,...
-    'FaceVertexCData',dataMesh.vertices(:,3),'FaceColor','interp','LineStyle','none',...
+patchHandle = patch('Faces',dataCurv.faces,'Vertices',dataCurv.vertices,...
+    'FaceVertexCData',dataCurv.vertices(:,3),'FaceColor','interp','LineStyle','none',...
     'FaceVertexAlphaData',0.3,'FaceAlpha','flat');
 % % Display mesh with only edges and vertices
-% patchedMesh = patch(dataMesh, 'FaceColor','none','LineWidth',0.5);
+% patchedMesh = patch(dataCurv, 'FaceColor','none','LineWidth',0.5);
 % hold on
-% plot3(dataMesh.vertices(:,1),dataMesh.vertices(:,2),dataMesh.vertices(:,3),'.');
+% plot3(dataCurv.vertices(:,1),dataCurv.vertices(:,2),dataCurv.vertices(:,3),'.');
 axis equal
 xlabel('X position ({\mu}m)');
 ylabel('Y position ({\mu}m)');
@@ -292,7 +339,7 @@ axis([0 PARAMS.imSettings.x*PARAMS.imSettings.latPixSize...
     0 PARAMS.imSettings.z*PARAMS.imSettings.axPixSize]);
 end
 
-function [dataCells, dataMesh] = cell2face(dataMesh,dataCells)
+function [dataCells, dataCurv] = cell2face(dataCurv,dataCells)
 % cycle through each cell and finds wich face of the mesh idoFirstPassntersect
 % Numerical problems can occur when the polygons have a large offset from
 % the origin !
@@ -301,27 +348,27 @@ fprintf('Establishing the cell/mesh connectivity\n');
 
 % Preallocate structures
 dataCells.cell2Face = cell(length(dataCells.numbers),1);
-dataCells.Face2Cell = cell(size(dataMesh.faces,1),1);
-dataMesh.contour = cell(size(dataMesh.faces,1),1);
+dataCells.Face2Cell = cell(size(dataCurv.faces,1),1);
+dataCurv.contour = cell(size(dataCurv.faces,1),1);
 
 % For every face of the mesh (first since it has to be reallocated into a
 % more manageable structure for every comparison)
 tic
 tempTime = 0;
-for meshTri = 1:size(dataMesh.faces,1) % USE A PARFOR HERE IF POSSIBLE !
+for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
     if mod(meshTri,100)== 0
-        fprintf('Analysed faces = %d out of %d. Time since last timepoint = %.1fs\n',meshTri,size(dataMesh.faces,1),...
+        fprintf('Analysed faces = %d out of %d. Time since last timepoint = %.1fs\n',meshTri,size(dataCurv.faces,1),...
             toc-tempTime);
         tempTime = toc;
     end
     % allocate the triangular of the Mesh face
-    dataMesh.contour{meshTri} = vertcat(dataMesh.vertices(dataMesh.faces(meshTri,1),:),...
-        dataMesh.vertices(dataMesh.faces(meshTri,2),:),...
-        dataMesh.vertices(dataMesh.faces(meshTri,3),:));
-    if ~ispolycw(dataMesh.contour{meshTri}(:,1),dataMesh.contour{meshTri}(:,2))
+    dataCurv.contour{meshTri} = vertcat(dataCurv.vertices(dataCurv.faces(meshTri,1),:),...
+        dataCurv.vertices(dataCurv.faces(meshTri,2),:),...
+        dataCurv.vertices(dataCurv.faces(meshTri,3),:));
+    if ~ispolycw(dataCurv.contour{meshTri}(:,1),dataCurv.contour{meshTri}(:,2))
         % check and force clockwise ordering
-        [dataMesh.contour{meshTri}(:,1),dataMesh.contour{meshTri}(:,2)] = ...
-            poly2cw(dataMesh.contour{meshTri}(:,1), dataMesh.contour{meshTri}(:,2));
+        [dataCurv.contour{meshTri}(:,1),dataCurv.contour{meshTri}(:,2)] = ...
+            poly2cw(dataCurv.contour{meshTri}(:,1), dataCurv.contour{meshTri}(:,2));
     end
     % end
     
@@ -330,7 +377,7 @@ for meshTri = 1:size(dataMesh.faces,1) % USE A PARFOR HERE IF POSSIBLE !
         %         bioCell = 1000;
         [xInter, ~] = polybool('intersection', dataCells.cellContour2D{bioCell}.cellCt(:,1),...
             dataCells.cellContour2D{bioCell}.cellCt(:,2),...
-            dataMesh.contour{meshTri}(:,1),dataMesh.contour{meshTri}(:,2));
+            dataCurv.contour{meshTri}(:,1),dataCurv.contour{meshTri}(:,2));
         if ~isempty(xInter)
             %             fprintf('cell %d Connected with mesh face %d\n', bioCell, meshTri);
             dataCells.cell2Face{bioCell} = cat(1,dataCells.cell2Face{bioCell},meshTri);
@@ -342,7 +389,7 @@ fprintf('Total time = %.1fs\n',toc);
 
 end
 
-function dataCells = cellSurface(dataMesh,dataCells)
+function dataCells = cellSurface(dataCurv,dataCells)
 % calculate the surface of each 2D segmented cell
 
 
@@ -362,8 +409,8 @@ for bioCell = 1 : length(dataCells.contourPo2D)
         % Find the intersection of the face and cell
         [xInter, yInter] = polybool('intersection', dataCells.cellContour2D{bioCell}.cellCt(:,1),...
             dataCells.cellContour2D{bioCell}.cellCt(:,2),...
-            dataMesh.contour{dataCells.cell2Face{bioCell}(polyInd)}(:,1),...
-            dataMesh.contour{dataCells.cell2Face{bioCell}(polyInd)}(:,2));
+            dataCurv.contour{dataCells.cell2Face{bioCell}(polyInd)}(:,1),...
+            dataCurv.contour{dataCells.cell2Face{bioCell}(polyInd)}(:,2));
         
         % If more than 1 intersection, split the polygon
         [xsplit, ysplit] = polysplit(xInter,yInter);
@@ -381,7 +428,7 @@ for bioCell = 1 : length(dataCells.contourPo2D)
 end
 
 %% Calculate the real and projected surfaces of the mesh Faces
-dataMesh = face2Area(dataMesh);
+dataCurv = face2Area(dataCurv);
 
 %% Correct each polygon 2D surface using the mesh face normal vector to obtain the 3D surface
 dataCells.area.areaRealTot = cell(length(dataCells.numbers),1);
@@ -389,33 +436,33 @@ dataCells.area.areaRealPerFace = cell(length(dataCells.numbers),1);
 for bioCell = 1:length(dataCells.contourPo2D)
     dataCells.area.areaRealPerFace{bioCell} = [];
     dataCells.area.areaRealPerFace{bioCell} = dataCells.area.areaProjPerFace{bioCell}.*...
-        dataMesh.surfRatio(dataCells.cell2Face{bioCell});
+        dataCurv.surfRatio(dataCells.cell2Face{bioCell});
     dataCells.area.areaRealTot{bioCell} = [];
     dataCells.area.areaRealTot{bioCell} = sum(dataCells.area.areaRealPerFace{bioCell});
 end
 
 end
 
-function dataMesh = face2Area(dataMesh)
+function dataCurv = face2Area(dataCurv)
 % Calculates both the projected along z and the real surface of each face
 % of the mesh
 
 fprintf('Calculating the mesh faces real and projected surfaces\n');
 
 % vectors of sides 1 and 2 of triangle
-u = dataMesh.vertices(dataMesh.faces(:,2), :) - dataMesh.vertices(dataMesh.faces(:,1), :);
-v = dataMesh.vertices(dataMesh.faces(:,3), :) - dataMesh.vertices(dataMesh.faces(:,1), :);
+u = dataCurv.vertices(dataCurv.faces(:,2), :) - dataCurv.vertices(dataCurv.faces(:,1), :);
+v = dataCurv.vertices(dataCurv.faces(:,3), :) - dataCurv.vertices(dataCurv.faces(:,1), :);
 % Real surface calculation
-dataMesh.realSurfFace = 1/2 * sqrt(sum(cross(u,v,2).^2, 2));
+dataCurv.realSurfFace = 1/2 * sqrt(sum(cross(u,v,2).^2, 2));
 % Z Projected surface calculation
 u(:,3) = 0;
 v(:,3) = 0;
-dataMesh.zProjSurfFace = 1/2 * sqrt(sum(cross(u,v,2).^2, 2));
+dataCurv.zProjSurfFace = 1/2 * sqrt(sum(cross(u,v,2).^2, 2));
 % Surface ratio
-dataMesh.surfRatio = dataMesh.realSurfFace./dataMesh.zProjSurfFace;
+dataCurv.surfRatio = dataCurv.realSurfFace./dataCurv.zProjSurfFace;
 end
 
-function dataCells = side2face(dataCells,dataSeg,dataMesh)
+function dataCells = side2face(dataCells,dataSeg,dataCurv)
 % Returns a faceID of the face above any specific vertex of the contour
 % based on Bellaiche side figure
 % Will provide a face connection to 0 if not covered by the mesh
@@ -423,11 +470,11 @@ for vertex = 1:length(dataSeg.VERTICES.XYs)
     if mod(vertex,1000)==0
         fprintf('Scanning vertex %d out of %d\n', vertex, length(dataSeg.VERTICES.XYs));
     end
-    for triFace = 1:length(dataMesh.faces) % for each triangular face of the mesh 
+    for triFace = 1:length(dataCurv.faces) % for each triangular face of the mesh 
         in = inpolygon(dataSeg.VERTICES.XYs(vertex,1),...
             dataSeg.VERTICES.XYs(vertex,2),...
-            dataMesh.contour{triFace}(:,1),...
-            dataMesh.contour{triFace}(:,2));
+            dataCurv.contour{triFace}(:,1),...
+            dataCurv.contour{triFace}(:,2));
         if in
            dataCells.VERTICES.vertexOnFace(vertex) = triFace;
            continue
@@ -439,7 +486,7 @@ toc
 
 end
 
-function dataCells = contour2face(dataCells,dataMesh)
+function dataCells = contour2face(dataCells,dataCurv)
 % for each cell, this function will parse the contour and find at which
 % face this contour point is attached. This sorting will be used for later
 % cell orientation calculation and cell coverage check
@@ -452,8 +499,8 @@ for bioCell = 1:length(dataCells.cellContour2D) % for each cell
     for triFace = 1:length(dataCells.cell2Face{bioCell}) % for each triangular face of the mesh connected to the cell
         in = inpolygon(dataCells.cellContour2D{bioCell}.cellCt(1:end-1,1),...
             dataCells.cellContour2D{bioCell}.cellCt(1:end-1,2),...
-            dataMesh.contour{dataCells.cell2Face{bioCell}(triFace)}(:,1),...
-            dataMesh.contour{dataCells.cell2Face{bioCell}(triFace)}(:,2));
+            dataCurv.contour{dataCells.cell2Face{bioCell}(triFace)}(:,1),...
+            dataCurv.contour{dataCells.cell2Face{bioCell}(triFace)}(:,2));
         dataCells.cellContour2D{bioCell}.vertexOnFace(in) = dataCells.cell2Face{bioCell}(triFace);
     end
     % last position is the same as first for a close contour
@@ -463,13 +510,13 @@ end
 
 end
 
-function dataCells = checkCoverage(dataCells,dataMesh,dataSeg,PARAMS)
+function dataCells = checkCoverage(dataCells,dataCurv,dataSeg,PARAMS)
 
 % Save dataset prior to filtering
 dataCells.allCells = dataCells;
 
 % First: Check for overcovered cells
-dataCells.allCells.overCoveredCells = checkOverCovered(dataCells,dataMesh);
+dataCells.allCells.overCoveredCells = checkOverCovered(dataCells,dataCurv);
 % after comparison of 3 methods (area ratio, normal to faces and contour
 % check) the normal method is the most conservative and doesn't let any
 % cell through if there is the smallest fold above it
@@ -484,14 +531,14 @@ dataCells.allCells.underCoveredCells = checkUnderCovered(dataCells,PARAMS);
 dataCells = cropOutCells(dataCells,dataSeg);
 
 % Display the croped out cells
-displayClipped(PARAMS,dataMesh,dataCells,dataSeg);
+displayClipped(PARAMS,dataCurv,dataCells,dataSeg);
 
 end
 
-function overCoveredCells = checkOverCovered(dataCells,dataMesh)
+function overCoveredCells = checkOverCovered(dataCells,dataCurv)
 % list cells covered by a downwards oriented face
 
-downFaces = dataMesh.normalF(3,:)<0;
+downFaces = dataCurv.normalF(3,:)<0;
 overCoveredCells = unique(vertcat(dataCells.Face2Cell{downFaces}));
 
 end
@@ -530,7 +577,7 @@ underCoveredCells = unique(vertcat(underCoveredArea,underCoveredContour'));
 
 end
 
-function displayClipped(PARAMS,dataMesh,dataCells,dataSeg)
+function displayClipped(PARAMS,dataCurv,dataCells,dataSeg)
 % display the 2D segmentation and the 3D mesh
 % List of the different sides populations to plot
 sidesList{1} = dataCells.SIDES.goodSides;
@@ -554,14 +601,14 @@ dispPARAMS{4}.EdgeColor = [1;0;1]';
 % Legends to be associated
 fullLegs = {leg1 leg2 leg3 leg4 'Mesh overlay'};
 
-displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataMesh);
+displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataCurv);
 
 title('Rejected clipped cells');
 savefig(gcf,[PARAMS.outputFolder filesep 'rejected_clipped_cells']);
 export_fig([PARAMS.outputFolder filesep 'rejected_clipped_cells'],'-png','-m5');
 end
 
-function displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataMesh)
+function displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataCurv)
 
 figure
 hold on
@@ -572,9 +619,9 @@ for graphPt = 1:length(sidesList)
     h{graphPt}.LineWidth = dispPARAMS{graphPt}.LineWidth;
 end
 
-% Overlay with mesh in blue only if the dataMesh arg is provided
+% Overlay with mesh in blue only if the dataCurv arg is provided
 if nargin == 6
-    h{length(sidesList)+1} = plotMesh(dataMesh,PARAMS);
+    h{length(sidesList)+1} = plotMesh(dataCurv,PARAMS);
     h{length(sidesList)+1}.FaceColor = [0;0.45;0.74];
 end
 
@@ -648,14 +695,14 @@ end
 
 end
 
-function [dataCells, dataMesh] = projectOnMesh(dataCells, dataSeg, dataMesh, PARAMS)
+function [dataCells, dataCurv] = projectOnMesh(dataCells, dataSeg, dataCurv, PARAMS)
 
 % Calculate plane equations describing each face (Alpha*X,Beta*Y,Gamma = Z)
-for meshFace = 1:length(dataMesh.faces)
-    faceCoords = dataMesh.vertices(dataMesh.faces(meshFace,:),:);
+for meshFace = 1:length(dataCurv.faces)
+    faceCoords = dataCurv.vertices(dataCurv.faces(meshFace,:),:);
     XYmat = horzcat(faceCoords(:,1:2),ones(3,1));
     Zmat = faceCoords(:,3);
-    dataMesh.planeCoefPerFace(meshFace,:) = XYmat \ Zmat;
+    dataCurv.planeCoefPerFace(meshFace,:) = XYmat \ Zmat;
 end
 
 % Use face plane coefficients to deproject the 2D contour on the mesh
@@ -665,7 +712,7 @@ for bioCell = 1:numel(dataCells.numbers)
     dataCells.cellContour3D{bioCell}.cellCt(:,3) = diag(...
         horzcat(dataCells.cellContour2D{bioCell}.cellCt,...
         ones(length(dataCells.cellContour2D{bioCell}.cellCt),1)) * ...
-        dataMesh.planeCoefPerFace(dataCells.cellContour2D{bioCell}.vertexOnFace,:)');
+        dataCurv.planeCoefPerFace(dataCells.cellContour2D{bioCell}.vertexOnFace,:)');
 end
 dataCells.cellContour3D = dataCells.cellContour3D';
 
@@ -678,14 +725,14 @@ for vertex = 1:length(dataCells.VERTICES.vertexOnFace)
         continue
     end
     dataCells.VERTICES.XYZs(vertex,3) = horzcat(dataCells.VERTICES.XYZs(vertex,1:2),ones(1)) * ...
-        dataMesh.planeCoefPerFace(dataCells.VERTICES.vertexOnFace(vertex),:)';
+        dataCurv.planeCoefPerFace(dataCells.VERTICES.vertexOnFace(vertex),:)';
 end
 
-displayDeprojected(PARAMS,dataMesh,dataCells)
+displayDeprojected(PARAMS,dataCurv,dataCells)
 
 end
 
-function displayDeprojected(PARAMS,dataMesh,dataCells)
+function displayDeprojected(PARAMS,dataCurv,dataCells)
 % display the 3D deprojected mesh and segmentation
 % List of the different sides populations to plot
 sidesList{1} = dataCells.SIDES.goodSides;
@@ -709,7 +756,7 @@ dispPARAMS{4}.EdgeColor = [1;0;1]';
 % Legends to be associated
 fullLegs = {leg1 leg2 leg3 leg4 'Mesh overlay'};
 
-displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataMesh)
+displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataCurv)
 
 titleStr = 'Deprojected Rejected clipped cells';
 title(titleStr);
@@ -717,10 +764,10 @@ savefig(gcf,[PARAMS.outputFolder filesep titleStr]);
 export_fig([PARAMS.outputFolder filesep titleStr],'-png','-m5');
 end
 
-function dataCells = cell2ellipse(dataCells,dataMesh,PARAMS)
+function dataCells = cell2ellipse(dataCells,dataCurv,PARAMS)
 
 % Calculate average plane according to each individual contours
-dataCells.planeFit = avPlaneOfFaces(dataCells,dataMesh.planeCoefPerFace);
+dataCells.planeFit = avPlaneOfFaces(dataCells,dataCurv.planeCoefPerFace);
 
 % Project 3D contour on average plane
 for bioCell = 1:length(dataCells.numbers)
