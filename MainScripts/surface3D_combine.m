@@ -347,14 +347,15 @@ function [dataCells, dataCurv] = cell2face(dataCurv,dataCells)
 fprintf('Establishing the cell/mesh connectivity\n');
 
 % Preallocate structures
-dataCells.cell2Face = cell(length(dataCells.numbers),1);
-dataCells.Face2Cell = cell(size(dataCurv.faces,1),1);
+cell2Face = cell(length(dataCells.numbers),1);
+Face2Cell = cell(size(dataCurv.faces,1),1);
 dataCurv.contour = cell(size(dataCurv.faces,1),1);
 
 % For every face of the mesh (first since it has to be reallocated into a
 % more manageable structure for every comparison)
 tic
 tempTime = 0;
+cellContour2D = dataCells.cellContour2D;
 for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
     if mod(meshTri,100)== 0
         fprintf('Analysed faces = %d out of %d. Time since last timepoint = %.1fs\n',meshTri,size(dataCurv.faces,1),...
@@ -373,18 +374,25 @@ for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
     % end
     
     % for every cell of the mesh
-    for bioCell = 1: length(dataCells.numbers)
+    localFace2Cell = zeros(1, length(dataCells.numbers));
+    localContour = dataCurv.contour{meshTri};
+    parfor bioCell = 1: length(dataCells.numbers)
         %         bioCell = 1000;
-        [xInter, ~] = polybool('intersection', dataCells.cellContour2D{bioCell}.cellCt(:,1),...
-            dataCells.cellContour2D{bioCell}.cellCt(:,2),...
-            dataCurv.contour{meshTri}(:,1),dataCurv.contour{meshTri}(:,2));
+        [xInter, ~] = polybool('intersection', cellContour2D{bioCell}.cellCt(:,1),...
+            cellContour2D{bioCell}.cellCt(:,2),...
+            localContour(:,1),localContour(:,2));
         if ~isempty(xInter)
             %             fprintf('cell %d Connected with mesh face %d\n', bioCell, meshTri);
-            dataCells.cell2Face{bioCell} = cat(1,dataCells.cell2Face{bioCell},meshTri);
-            dataCells.Face2Cell{meshTri} = cat(1,dataCells.Face2Cell{meshTri},bioCell);
+            cell2Face{bioCell} = cat(1,cell2Face{bioCell},meshTri);
+            localFace2Cell(bioCell) = bioCell;
         end
     end
+    Face2Cell{meshTri} = localFace2Cell;
 end
+
+dataCells.cell2Face = cell2Face;
+dataCells.Face2Cell = unique(localFace2Cell)>0;
+
 fprintf('Total time = %.1fs\n',toc);
 
 end
