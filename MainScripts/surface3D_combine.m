@@ -26,7 +26,8 @@ projected seg (based on the polygon surface of the cell)
 14) Display final maps
 %}
 
-function surface3D_combine()
+function surface3D_combine(doDispBell, doDispMesh, doDispOverlay, axPixSize,...
+    tiffImSize, maxFaces, outputFolder, segLoc, curveLoc)
 tic
 close all
 
@@ -36,39 +37,64 @@ PARAMS = {};
 
 PARAMS.softVersion = 'surface3D_combine_v0p13.m';
 
-PARAMS.doDispBell = true; % display the 2D segmentation
-PARAMS.doDispMesh = true; % display the 3D mesh
-PARAMS.doDispOverlay = true; % display the overlayed 2D seg and 3D mesh
-PARAMS.doDispErrorEllipse = true; % display the cells with an ellipse fit error 
+if nargin == 0 
+    fprintf('Using default input parameters\n');
+    PARAMS.doDispBell = true; % display the 2D segmentation
+    PARAMS.doDispMesh = true; % display the 3D mesh
+    PARAMS.doDispOverlay = true; % display the overlayed 2D seg and 3D mesh
+    PARAMS.doDispErrorEllipse = true; % display the cells with an ellipse fit error
+    
+    % Define axial step size (in um)
+    PARAMS.imSettings.axPixSize = 0.5; % Axial pixel size (in um)
+    
+    PARAMS.tiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
+    PARAMS.maxFaces = 3000; % If need be, reduce the maximum number of faces for the mesh
+    
+elseif nargin == 9
+    fprintf('Using GUI input parameters\n');
+    % Displays inputs
+    PARAMS.doDispBell = doDispBell; % display the 2D segmentation
+    PARAMS.doDispMesh = doDispMesh; % display the 3D mesh
+    PARAMS.doDispOverlay = doDispOverlay; % display the overlayed 2D seg and 3D mesh
+    
+    % Define axial step size (in um)
+    PARAMS.imSettings.axPixSize = axPixSize;
+    
+    % Curvature import    
+    PARAMS.tiffImSize = tiffImSize; % Limit the input image size when using an elevation map (in pix)
+    PARAMS.maxFaces = maxFaces; % If need be, reduce the maximum number of faces for the mesh
+else
+    fprintf('Number of input arguments is inadequate\n');
+end
 
-% PARAMS.imSettings.x = 3342; % image size in X (in px) % set in dataSeg
-% PARAMS.imSettings.y = 2916; % image size in Y (in px) % set in dataSeg
-PARAMS.imSettings.z = 103; % image size in Z (in px)
-% PARAMS.imSettings.latPixSize = 0.2076; % Lateral pixel size (in um) % set in dataSeg
-PARAMS.imSettings.axPixSize = 0.5; % Axial pixel size (in um)
+% Check that path actually contains a valid path
+if isempty(outputFolder) % output folder 
+    PARAMS.outputFolder = uigetdir(pwd,'Select the output folder');
+else
+    PARAMS.outputFolder = outputFolder;
+end
+if isfile(segLoc) % segmentation file
+    PARAMS.segLoc = segLoc;
+else
+    PARAMS.segLoc = uipickfiles( 'Prompt','Select the 2D segmented file (.mat format)',...
+        'FilterSpec','*.mat','out','ch','num',1);
+end
+if isfile(curveLoc) % sample curvature file
+    PARAMS.curveLoc = curveLoc;
+else
+    PARAMS.curveLoc = uipickfiles( 'Prompt','Select the curve file (.ply or .tif format)',...
+        'REFilter','\.ply$|\.tif$','out','ch','num',1);
+end
 
-PARAMS.tiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
-PARAMS.maxFaces = 10000; % If need be, reduce the maximum number of faces for the mesh
 
+% PARAMETERS unaccessible from the GUI
 PARAMS.maxTolAreaRatio = 0.001; % set the maximum tolerance for the ratio faceArea / cellArea
-
+PARAMS.doDispErrorEllipse = false; % display the cells with an ellipse fit error
+PARAMS.imSettings.z = 0; % image size in Z (in px) => Could be used to offset the curvature
 %%%%%%%%%%%%%%%%%%%%%% END OF PARAMETERS %%%%%%%%%%%%%%%%%%%%%% 
 
-PARAMS.outputFolder = uigetdir(pwd,'Select the output folder');
+
 cd(PARAMS.outputFolder)
-PARAMS.curvLoc = uipickfiles( 'Prompt','Select the curve file (.ply or .tif format)',...
-    'REFilter','\.ply$|\.tif$','out','ch','num',1);
-PARAMS.segLoc = uipickfiles( 'Prompt','Select the 2D segmented file (.mat format)',...
-    'FilterSpec','*.mat','out','ch','num',1);
-
-
-
-% % GUI call bypass
-% PARAMS.curvLoc =...
-%     'D:\sherbert\project1\newMesh_\processedMesh_bin.ply';
-% PARAMS.segLoc = ...
-%     'D:\sherbert\project1\testSeg2D\Bellaiche_output\SIA_161210_gfapnlsg_Backup_001.mat';
-
 
 %% Load 2D segmetation from Bellaiche soft and resize/flip
 [dataSeg, dataCells, PARAMS] = loadSeg(PARAMS);
@@ -168,10 +194,10 @@ end
 function dataCurv = loadCurve(PARAMS)
 %% Load as a mesh the curvature of the sample form a mesh of from a 2D elevation map
 
-if endsWith(PARAMS.curvLoc, '.ply')
+if endsWith(PARAMS.curveLoc, '.ply')
     % Load a 3D mesh produced by the MorphographX soft
     dataCurv = loadMesh(PARAMS);
-elseif endsWith( PARAMS.curvLoc, '.tif' )
+elseif endsWith( PARAMS.curveLoc, '.tif' )
     % Load an elevation map such as produced by LocalZProj transformed to a
     % mesh format
     dataCurv = loadElev(PARAMS);
@@ -186,13 +212,13 @@ end
 function dataCurv = loadElev(PARAMS)
 %% Load a 2D elevation map and format it as a mesh
 fprintf('Loading elevation map\n');
-tiffImage = tiffread2(PARAMS.curvLoc);
+tiffImage = read(Tiff(PARAMS.curveLoc));
 
 % Calculate the scaling factor
-scalingFactor = ceil( tiffImage.width*tiffImage.height / PARAMS.tiffImSize);
+scalingFactor = ceil( size(tiffImage,1)*size(tiffImage,2) / PARAMS.tiffImSize);
 
 % import and scale the image data
-z = double(tiffImage.data);
+z = double(tiffImage);
 z = imresize( z, sqrt(1/scalingFactor) );
 [x,y] = meshgrid(1:size(z,2),1:size(z,1));
 pointMat = [reshape(x,[],1),reshape(y,[],1),reshape(z,[],1)];
@@ -222,13 +248,22 @@ function dataCurv = loadMesh(PARAMS)
 % load data
 % Add we GUI after original test phase
 fprintf('Loading mesh file\n');
-[dataCurv.vertices,dataCurv.faces] = read_ply(PARAMS.curvLoc);
+[dataCurv.vertices,dataCurv.faces] = read_ply(PARAMS.curveLoc);
 
  
-% Correct the centering of the image (force 0,0,0 in bottom left)
-dataCurv.vertices = bsxfun(@plus,dataCurv.vertices,[PARAMS.imSettings.x*PARAMS.imSettings.latPixSize...
-    PARAMS.imSettings.y*PARAMS.imSettings.latPixSize...
-    PARAMS.imSettings.z*PARAMS.imSettings.axPixSize]/2);
+% Correct the centering of the image. Default is that coordinates origin of the
+% mesh are in the center of the image while we need to force 0,0,0 in the
+% bottom left
+
+% Make sure the mesh z position is only in positive values, keep the
+% maximum offset between the lowest point and half the range of the
+% original if specified by the user
+axialOffset = max( PARAMS.imSettings.z*PARAMS.imSettings.axPixSize/2, ...
+    ceil( abs( min( dataCurv.vertices(:,3) ) ) ) );
+dataCurv.vertices = bsxfun( @plus,dataCurv.vertices,...
+    [ PARAMS.imSettings.x*PARAMS.imSettings.latPixSize/2 ...
+    PARAMS.imSettings.y*PARAMS.imSettings.latPixSize/2 ...
+    axialOffset ] );
 
 % Flip in Y the image for overlay with the 2D segmentation
 dataCurv.vertices(:,2) = abs(bsxfun(@minus,dataCurv.vertices(:,2),...
@@ -259,8 +294,8 @@ PARAMS.imSettings.y = dataSeg.FRAME.imageSize(1); % image size in Y (in px) % ex
 % the beginning
 PARAMS.imSettings.latPixSize = dataSeg.FRAME.scale1D; % Lateral pixel size (in um) % exists in dataSeg
 
-% Check Parameter values
-PARAMS = checkPARAMS(PARAMS);
+% % Check Parameter values => rendered useless by the GUI
+% PARAMS = checkPARAMS(PARAMS);
 
 % rescale and calculate the 2D position of each cell contour (and delete the whole sample fake cell)
 dataCells.contourPo2D = {};
@@ -336,7 +371,7 @@ ylabel('Y position ({\mu}m)');
 title('3D Mesh result');
 axis([0 PARAMS.imSettings.x*PARAMS.imSettings.latPixSize...
     0 PARAMS.imSettings.y*PARAMS.imSettings.latPixSize...
-    0 PARAMS.imSettings.z*PARAMS.imSettings.axPixSize]);
+    0 max( dataCurv.vertices(:,3) )]);
 end
 
 function [dataCells, dataCurv] = cell2face(dataCurv,dataCells)
