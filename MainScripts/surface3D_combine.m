@@ -48,7 +48,12 @@ if nargin == 0
     PARAMS.imSettings.axPixSize = 0.5; % Axial pixel size (in um)
     
     PARAMS.tiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
-    PARAMS.maxFaces = 3000; % If need be, reduce the maximum number of faces for the mesh
+    PARAMS.maxFaces = 300; % If need be, reduce the maximum number of faces for the mesh
+    
+    % initialize input and output
+    outputFolder = '';
+    segLoc = '';
+    curveLoc = '';
     
 elseif nargin == 9
     fprintf('Using GUI input parameters\n');
