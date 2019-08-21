@@ -427,11 +427,11 @@ for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
             localFace2Cell(bioCell) = bioCell;
         end
     end
-    Face2Cell{meshTri} = localFace2Cell;
+    Face2Cell{meshTri} = unique(localFace2Cell(localFace2Cell>0));
 end
 
 dataCells.cell2Face = cell2Face;
-dataCells.Face2Cell = unique(localFace2Cell)>0;
+dataCells.Face2Cell = Face2Cell;
 
 fprintf('Total time = %.1fs\n',toc);
 
@@ -587,7 +587,7 @@ function overCoveredCells = checkOverCovered(dataCells,dataCurv)
 % list cells covered by a downwards oriented face
 
 downFaces = dataCurv.normalF(3,:)<0;
-overCoveredCells = unique(vertcat(dataCells.Face2Cell{downFaces}));
+overCoveredCells = unique(horzcat(dataCells.Face2Cell{downFaces}))';
 
 end
 
