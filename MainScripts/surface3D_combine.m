@@ -189,7 +189,7 @@ save('bellaicheTable.mat','tableOutputBell');
 %% Display final maps
 displayCombinedMap(tableOutputDeproj,tableOutputBell,dataCells.cellContour3D,PARAMS.outputFolder)
 
-sprintf('Deprojection finished after %d minutes',round(toc)/60);
+fprintf('Deprojection finished after %d minutes\n',round(toc/60));
 
 end
 
