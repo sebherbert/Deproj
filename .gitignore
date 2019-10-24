@@ -24,6 +24,9 @@ octave-workspace
 # Do not include old files in the git repo.
 oldScripts/
 
+# Do not include temporary drafts
+tests/
+
 
 
 
