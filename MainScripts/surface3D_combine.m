@@ -122,8 +122,8 @@ if PARAMS.doDispMesh
     axis equal
     savefig(gcf,[PARAMS.outputFolder filesep 'mesh3D']);
 end
-% Plot combined images if asked % currently an issue since displayed
-% bellaiche is in µm and mesh in pix
+% Plot combined images if asked 
+% currently an issue since displayed bellaiche is in µm and mesh in pix
 if PARAMS.doDispOverlay
     figure
     hold on
