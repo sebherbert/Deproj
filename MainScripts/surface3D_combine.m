@@ -26,8 +26,8 @@ projected seg (based on the polygon surface of the cell)
 14) Display final maps
 %}
 
-function surface3D_combine(doDispBell, doDispMesh, doDispOverlay, axPixSize,...
-    tiffImSize, maxFaces, outputFolder, segLoc, curveLoc)
+function surface3D_combine(doDispBell, doDispMesh, doDispOverlay, voxSize,...
+    maxTiffImSize, maxFaces, outputFolder, segLoc, curveLoc)
 tic
 close all
 
@@ -35,25 +35,31 @@ PARAMS = {};
 
 %%%%%%%%%%%%%%%%%%%%%% PARAMETERS %%%%%%%%%%%%%%%%%%%%%% 
 
-PARAMS.softVersion = 'surface3D_combine_v0p13.m';
+PARAMS.softVersion = 'surface3D_combine_v0p1p0.m';
 
 if nargin == 0 
     fprintf('Using default input parameters\n');
-    PARAMS.doDispBell = true; % display the 2D segmentation
-    PARAMS.doDispMesh = true; % display the 3D mesh
-    PARAMS.doDispOverlay = true; % display the overlayed 2D seg and 3D mesh
+    PARAMS.doDispBell = false; % display the 2D segmentation
+    PARAMS.doDispMesh = false; % display the 3D mesh
+    PARAMS.doDispOverlay = false; % display the overlayed 2D seg and 3D mesh
     PARAMS.doDispErrorEllipse = true; % display the cells with an ellipse fit error
     
     % Define axial step size (in um)
-    PARAMS.imSettings.axPixSize = 0.5; % Axial pixel size (in um)
+    PARAMS.imSettings.axPixSize = 0.5; % axial voxel size (in um)
+    PARAMS.imSettings.latPixSize = 0.2; % lateral voxel size (in um)
     
-    PARAMS.tiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
+    PARAMS.maxTiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
     PARAMS.maxFaces = 300; % If need be, reduce the maximum number of faces for the mesh
     
     % initialize input and output
     outputFolder = '';
     segLoc = '';
     curveLoc = '';
+    
+    % DEV ONLY
+    outputFolder = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/output/';
+    segLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/GT_SegmentationResults-labels-1.tif';
+    curveLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/LValonMultiC_elevMap_T1.tif';
     
 elseif nargin == 9
     fprintf('Using GUI input parameters\n');
@@ -62,11 +68,12 @@ elseif nargin == 9
     PARAMS.doDispMesh = doDispMesh; % display the 3D mesh
     PARAMS.doDispOverlay = doDispOverlay; % display the overlayed 2D seg and 3D mesh
     
-    % Define axial step size (in um)
-    PARAMS.imSettings.axPixSize = axPixSize;
+    % Define voxel size (in um)
+    PARAMS.imSettings.latPixSize = voxSize(1); % placeholders if ply object, will be overwritten
+    PARAMS.imSettings.axPixSize = voxSize(2); % placeholders if ply object, will be overwritten
     
     % Curvature import    
-    PARAMS.tiffImSize = tiffImSize; % Limit the input image size when using an elevation map (in pix)
+    PARAMS.maxTiffImSize = maxTiffImSize; % Limit the input image size when using an elevation map (in pix)
     PARAMS.maxFaces = maxFaces; % If need be, reduce the maximum number of faces for the mesh
 else
     fprintf('Number of input arguments is inadequate\n');
@@ -101,8 +108,9 @@ PARAMS.imSettings.z = 0; % image size in Z (in px) => Could be used to offset th
 
 cd(PARAMS.outputFolder)
 
+
 %% Load 2D segmetation from Bellaiche soft and resize/flip
-[dataSeg, dataCells, PARAMS] = loadSeg(PARAMS);
+[dataSeg, PARAMS] = loadSeg(PARAMS);
 
 %% Load sample curvature
 dataCurv = loadCurve(PARAMS);
@@ -143,7 +151,7 @@ end
 %% Restructure projected cells to proper contours
 % Find contiguous points of each cell/polygon countour
 % Creates the edges for later use
-dataCells.cellContour2D = findContour(dataCells.contourPo2D, 'bwboundary', PARAMS);
+dataCells.cellContour2D = findContour( dataSeg, PARAMS);
 
 % % create triangulated areas Check with polygon intersection instead
 % dataCells = polygon2surface(dataCells);
@@ -221,7 +229,7 @@ fprintf('Loading elevation map\n');
 tiffImage = read(Tiff(PARAMS.curveLoc));
 
 % Calculate the scaling factor
-scalingFactor = ceil( size(tiffImage,1)*size(tiffImage,2) / PARAMS.tiffImSize);
+scalingFactor = ceil( size(tiffImage,1)*size(tiffImage,2) / PARAMS.maxTiffImSize);
 
 % import and scale the image data
 z = double(tiffImage);
@@ -275,7 +283,7 @@ dataCurv.vertices = bsxfun( @plus,dataCurv.vertices,...
 dataCurv.vertices(:,2) = abs(bsxfun(@minus,dataCurv.vertices(:,2),...
     PARAMS.imSettings.y*PARAMS.imSettings.latPixSize));
 
-% If the number of faces is too high than reduce them
+% If the number of faces is too high then reduce them
 if length(dataCurv.faces)>PARAMS.maxFaces
     fprintf('Reducing the number of faces in the Mesh\n');
     dataCurv = reducepatch(dataCurv,PARAMS.maxFaces,'verbose');    
@@ -283,57 +291,20 @@ end
 
 end
 
-function [dataSeg, dataCells, PARAMS] = loadSeg(PARAMS) 
-% load and parse data from the Bellaiche analysis 
-% returns the main structure + an additionnal field for the cells contour
+function [dataSeg, PARAMS] = loadSeg(PARAMS) 
+% load ridge image containing the segmentation.
+% returns the main structure + an additionnal structure for the cells contour
 % in pixels (0,0,0 = corners bottom left)
 
 % Load data 
-% Add we GUI after original test phase
-fprintf('Loading segmentation file\n');
-dataSeg = load(PARAMS.segLoc);
+fprintf('Loading segmentation image\n');
+dataSeg = imread(PARAMS.segLoc);
 
-% Set x y and frame parameters
-PARAMS.imSettings.x = dataSeg.FRAME.imageSize(2); % image size in X (in px) % exists in dataSeg
-PARAMS.imSettings.y = dataSeg.FRAME.imageSize(1); % image size in Y (in px) % exists in dataSeg
-% PARAMS.imSettings.z and PARAMS.imSettings.axPixSize => are set by hand at
-% the beginning
-PARAMS.imSettings.latPixSize = dataSeg.FRAME.scale1D; % Lateral pixel size (in um) % exists in dataSeg
+% Set x y size
+[ PARAMS.imSettings.y, PARAMS.imSettings.x ] = size( dataSeg );
 
-% % Check Parameter values => rendered useless by the GUI
-% PARAMS = checkPARAMS(PARAMS);
-
-% rescale and calculate the 2D position of each cell contour (and delete the whole sample fake cell)
-dataCells.contourPo2D = {};
-for bioCell=1:length(dataSeg.CELLS.numbers) % for each cell
-    dataCells.contourPo2D{bioCell} = zeros(length(dataSeg.CELLS.contour_indices{bioCell}),2);
-    for vertice=1:length(dataSeg.CELLS.contour_indices{bioCell})
-        %         dataCells.contourPo2D{bioCell}(vertice,1)=...
-        %             idivide(dataSeg.CELLS.contour_indices{bioCell}(vertice),int32(2916))*PARAMS.imSettings.latPixSize;
-        %         dataCells.contourPo2D{bioCell}(vertice,2)=...
-        %             rem(dataSeg.CELLS.contour_indices{bioCell}(vertice),int32(2916))*PARAMS.imSettings.latPixSize;
-        %         dataCells.contourPo2D{bioCell}(vertice,3)=0; % fake z position for plot 3D
-        
-        dataCells.contourPo2D{bioCell}(vertice,1)=...
-            double(idivide(dataSeg.CELLS.contour_indices{bioCell}(vertice),int32(2916)))*PARAMS.imSettings.latPixSize;
-        dataCells.contourPo2D{bioCell}(vertice,2)=...
-            double(rem(dataSeg.CELLS.contour_indices{bioCell}(vertice),int32(2916)))*PARAMS.imSettings.latPixSize;
-    end
-end
-dataCells.contourPo2D = dataCells.contourPo2D';
-
-dataCells.types = dataSeg.CELLS.types;
-dataCells.numbers = dataSeg.CELLS.numbers;
-
-% % delete largest cell => whole sample fake cell % to be used if too long
-% % calculation or proves to be a problem
-% [sorted_contour_length,I] = sort(dataSeg.CELLS.contour_chord_lengths,'descend');
-% if sorted_contour_length(1)/sorted_contour_length(2) > 10
-%     % if not the largest cell may not be the sample contour
-%     dataCells.contourPo2D(I(1)) = [];
-% else
-%     disp('Warning: check that the largest cell is the sample contour');
-% end
+% dataCells.types = dataSeg.CELLS.types;
+% dataCells.numbers = 1:dataSeg.CELLS.numbers;
 
 end
 
@@ -718,7 +689,7 @@ dataCells.area.areaProjPerFace(clippedCellList) = [];
 dataCells.area.areaProjTot(clippedCellList) = [];
 dataCells.area.areaRealPerFace(clippedCellList) = [];
 dataCells.area.areaRealTot(clippedCellList) = [];
-dataCells.types(clippedCellList) = [];
+% dataCells.types(clippedCellList) = [];
 dataCells.numbers(clippedCellList) = [];
 
 % Create the last SIDES copy for the good cells
