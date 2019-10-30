@@ -416,7 +416,7 @@ fprintf('Calculating the 2D surface of the polygonal faces intersecting each cel
 dataCells.area.areaProjTot = cell(length(dataCells.cellIdx),1);
 dataCells.area.areaProjPerFace = cell(length(dataCells.cellIdx),1);
 
-for bioCell = 1 : length(dataCells.contourPo2D)
+for bioCell = 1 : length(dataCells.cellContour2D)
     if isempty(dataCells.cell2Face{bioCell})
         continue
     end
@@ -450,7 +450,7 @@ dataCurv = face2Area(dataCurv);
 %% Correct each polygon 2D surface using the mesh face normal vector to obtain the 3D surface
 dataCells.area.areaRealTot = cell(length(dataCells.cellIdx),1);
 dataCells.area.areaRealPerFace = cell(length(dataCells.cellIdx),1);
-for bioCell = 1:length(dataCells.contourPo2D)
+for bioCell = 1:length(dataCells.cellContour2D)
     dataCells.area.areaRealPerFace{bioCell} = [];
     dataCells.area.areaRealPerFace{bioCell} = dataCells.area.areaProjPerFace{bioCell}.*...
         dataCurv.surfRatio(dataCells.cell2Face{bioCell});
@@ -679,7 +679,6 @@ dataCells.SIDES.underOverSides = dataSeg.SIDES.vertices(...
     vertcat(dataSeg.CELLS.sides{dataCells.cellIdx(dataCells.allCells.underAndOverCells)}),:);
 
 % Delete all the badly covered cells from the main structure
-dataCells.contourPo2D(clippedCellList) = [];
 dataCells.cellContour2D(clippedCellList) = [];
 dataCells.cell2Face(clippedCellList) = [];
 dataCells.area.areaProjPerFace(clippedCellList) = [];
