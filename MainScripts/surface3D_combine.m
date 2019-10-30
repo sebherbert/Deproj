@@ -226,7 +226,7 @@ end
 function dataCurv = loadElev(PARAMS)
 %% Load a 2D elevation map and format it as a mesh
 fprintf('Loading elevation map\n');
-tiffImage = read(Tiff(PARAMS.curveLoc));
+tiffImage = imread(PARAMS.curveLoc);
 
 % Calculate the scaling factor
 scalingFactor = ceil( size(tiffImage,1)*size(tiffImage,2) / PARAMS.maxTiffImSize);
