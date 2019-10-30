@@ -18,9 +18,7 @@ function boundaries = findContour( labelIm, PARAMS )
 
 fprintf('Recreating the cellular contours\n');
 
-
-
-% %% Create a temporary binary image of each individual cell before
+%% %% Create a temporary binary image of each individual cell before => Old version from Bellaiche data
 % % applying a boundary finding method == OLD VERSION
 % for bioCell = 1:length(contour2Dpos) % for all cells
 %     clear miniContour miniImg
@@ -101,10 +99,6 @@ fprintf('Recreating the cellular contours\n');
 
 %%
 
-
-% Exclude cells touching the image border.
-labelIm = excludeBorderObjects( labelIm );
-
 % Find all the objects in the image
 cc = bwconncomp(labelIm, 4);
 
@@ -126,16 +120,37 @@ parfor bioCell = 1 : cc.NumObjects
     
     b = bwboundaries( emptyImage, 8, 'noholes');
     
-    boundaries{ bioCell } = b{ 1 } * PARAMS.imSettings.latPixSize;
+    % Only save objects that are not connected to the border
+    if (min(b{1}(:,1)) == 1) ||...                        % Top
+            (min(b{1}(:,2))== 1) ||...                    % Left
+            (max(b{1}(:,1)) == cc.ImageSize(1)) ||...     % Bottom
+            (max(b{1}(:,2)) == cc.ImageSize(2))           % Right
+       continue 
+    end
         
+    boundaries{ bioCell } = b{ 1 };
+        
+end
+
+% Clean the cell structure of its empty positions
+for bioCell = cc.NumObjects : -1 : 1 
+    if isempty(boundaries{bioCell})
+        boundaries( bioCell ) = [];
+    end
 end
 
 % figure % => To display all the segmented cells
 % imshow( labelIm, [] )
 % hold on
-% for bioCell = 1 : cc.NumObjects
+% for bioCell = 1 : numel(boundaries)
 %     line( boundaries{ bioCell }(:,2), boundaries{ bioCell }(:,1) , 'Marker', '.' )  
 % end
+
+% Rescale to physical size
+for bioCell = 1 : numel(boundaries)
+    boundaries{ bioCell } = boundaries{ bioCell } * PARAMS.imSettings.latPixSize;
+end
+
 
 end
 
