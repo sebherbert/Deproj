@@ -1,6 +1,6 @@
 
 
-function boundaries = findContour( labelIm, PARAMS )
+function [boundaries, cellIdx] = findContour( labelIm, PARAMS )
 %% finds the contour around a set of pixels originating from a previous segmentation 
 
 % find the correct order of the points defining the polygon contour of each
@@ -151,34 +151,9 @@ for bioCell = 1 : numel(boundaries)
     boundaries{ bioCell } = boundaries{ bioCell } * PARAMS.imSettings.latPixSize;
 end
 
+cellIdx = 1:numel(boundaries);
 
 end
-
-
-
-function labelIm_NoBorder = excludeBorderObjects( labelIm )
-% Exclude objects that are connected to the border
-% Keep in mind that objects 1 pixel away from the border will not be
-% rejected!
-% Only works for label image
-
-% Copy original image
-labelIm_NoBorder = labelIm;
-
-% Find all the objects of interest
-objectsList2reject = unique( labelIm( : , 1) );
-objectsList2reject = unique( [ objectsList2reject ; labelIm( : , end) ] );
-objectsList2reject = unique( [ objectsList2reject ; labelIm( 1 , :)' ] );
-objectsList2reject = unique( [ objectsList2reject ; labelIm( end , :)' ] );
-
-% Set all objects to reject to 0
-for object = 1:numel(objectsList2reject)
-    labelIm_NoBorder( labelIm_NoBorder == objectsList2reject(object) ) = 0;
-end
-
-
-end
-
 
 
 

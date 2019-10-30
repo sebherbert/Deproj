@@ -151,7 +151,7 @@ end
 %% Restructure projected cells to proper contours
 % Find contiguous points of each cell/polygon countour
 % Creates the edges for later use
-dataCells.cellContour2D = findContour( dataSeg, PARAMS);
+[ dataCells.cellContour2D, dataCells.cellIdx] = findContour( dataSeg, PARAMS);
 
 % % create triangulated areas Check with polygon intersection instead
 % dataCells = polygon2surface(dataCells);
@@ -303,8 +303,8 @@ dataSeg = imread(PARAMS.segLoc);
 % Set x y size
 [ PARAMS.imSettings.y, PARAMS.imSettings.x ] = size( dataSeg );
 
-% dataCells.types = dataSeg.CELLS.types;
-% dataCells.numbers = 1:dataSeg.CELLS.numbers;
+% dataCells.numbers = 1:dataSeg.CELLS.numbers; => now using
+% dataCells.cellIdx set in findContour.m function
 
 end
 
@@ -359,7 +359,7 @@ function [dataCells, dataCurv] = cell2face(dataCurv,dataCells)
 fprintf('Establishing the cell/mesh connectivity\n');
 
 % Preallocate structures
-cell2Face = cell(length(dataCells.numbers),1);
+cell2Face = cell(length(dataCells.cellIdx),1);
 Face2Cell = cell(size(dataCurv.faces,1),1);
 dataCurv.contour = cell(size(dataCurv.faces,1),1);
 
@@ -386,9 +386,9 @@ for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
     % end
     
     % for every cell of the mesh
-    localFace2Cell = zeros(1, length(dataCells.numbers));
+    localFace2Cell = zeros(1, length(dataCells.cellIdx));
     localContour = dataCurv.contour{meshTri};
-    parfor bioCell = 1: length(dataCells.numbers)
+    parfor bioCell = 1: length(dataCells.cellIdx)
         %         bioCell = 1000;
         [xInter, ~] = polybool('intersection', cellContour2D{bioCell}.cellCt(:,1),...
             cellContour2D{bioCell}.cellCt(:,2),...
@@ -416,8 +416,8 @@ function dataCells = cellSurface(dataCurv,dataCells)
 %% calculate the 2D surfaces of the polygonal faces intersecting the cell
 fprintf('Calculating the 2D surface of the polygonal faces intersecting each cell\n')
 
-dataCells.area.areaProjTot = cell(length(dataCells.numbers),1);
-dataCells.area.areaProjPerFace = cell(length(dataCells.numbers),1);
+dataCells.area.areaProjTot = cell(length(dataCells.cellIdx),1);
+dataCells.area.areaProjPerFace = cell(length(dataCells.cellIdx),1);
 
 for bioCell = 1 : length(dataCells.contourPo2D)
     if isempty(dataCells.cell2Face{bioCell})
@@ -451,8 +451,8 @@ end
 dataCurv = face2Area(dataCurv);
 
 %% Correct each polygon 2D surface using the mesh face normal vector to obtain the 3D surface
-dataCells.area.areaRealTot = cell(length(dataCells.numbers),1);
-dataCells.area.areaRealPerFace = cell(length(dataCells.numbers),1);
+dataCells.area.areaRealTot = cell(length(dataCells.cellIdx),1);
+dataCells.area.areaRealPerFace = cell(length(dataCells.cellIdx),1);
 for bioCell = 1:length(dataCells.contourPo2D)
     dataCells.area.areaRealPerFace{bioCell} = [];
     dataCells.area.areaRealPerFace{bioCell} = dataCells.area.areaProjPerFace{bioCell}.*...
@@ -567,9 +567,9 @@ function underCoveredCells = checkUnderCovered(dataCells,PARAMS)
 
 % List cells for which the coverage is only partial (below a user defined
 % threshold)
-areaCell = zeros(length(dataCells.numbers),1);
-areaSeg = zeros(length(dataCells.numbers),1);
-for bioCell = 1:length(dataCells.numbers)
+areaCell = zeros(length(dataCells.cellIdx),1);
+areaSeg = zeros(length(dataCells.cellIdx),1);
+for bioCell = 1:length(dataCells.cellIdx)
     areaSeg(bioCell) = polyarea(dataCells.cellContour2D{bioCell}.cellCt(:,1),...
         dataCells.cellContour2D{bioCell}.cellCt(:,2));
     if isempty(dataCells.area.areaProjTot{bioCell})
@@ -586,7 +586,7 @@ underCoveredArea = find((areaRatio+PARAMS.maxTolAreaRatio)<1);
 % if there is unallocated vertexes the default face value will be 0
 % (otherwise >= 1)
 underCoveredContour = [];
-for bioCell = 1:length(dataCells.numbers)
+for bioCell = 1:length(dataCells.cellIdx)
     if(logical(sum(dataCells.cellContour2D{bioCell}.vertexOnFace == 0)))
         underCoveredContour = horzcat(underCoveredContour,bioCell);
     end
@@ -601,7 +601,7 @@ function displayClipped(PARAMS,dataCurv,dataCells,dataSeg)
 % display the 2D segmentation and the 3D mesh
 % List of the different sides populations to plot
 sidesList{1} = dataCells.SIDES.goodSides;
-leg1 = sprintf('Good cells (N=%d)',length(dataCells.numbers));
+leg1 = sprintf('Good cells (N=%d)',length(dataCells.cellIdx));
 sidesList{2} = dataCells.SIDES.underSides;
 leg2 = sprintf('Undercovered cells (N=%d)',length(dataCells.allCells.underCoveredCells));
 sidesList{3} = dataCells.SIDES.overSides;
@@ -675,11 +675,11 @@ dataCells.allCells.underAndOverCells = unique(catClipped(occurence>1));
 % for the good ones which will be selected by default) into a separate copy
 % to be able to display them separately
 dataCells.SIDES.underSides = dataSeg.SIDES.vertices(...
-    vertcat(dataSeg.CELLS.sides{dataCells.numbers(dataCells.allCells.underCoveredCells)}),:);
+    vertcat(dataSeg.CELLS.sides{dataCells.cellIdx(dataCells.allCells.underCoveredCells)}),:);
 dataCells.SIDES.overSides = dataSeg.SIDES.vertices(...
-    vertcat(dataSeg.CELLS.sides{dataCells.numbers(dataCells.allCells.overCoveredCells)}),:);
+    vertcat(dataSeg.CELLS.sides{dataCells.cellIdx(dataCells.allCells.overCoveredCells)}),:);
 dataCells.SIDES.underOverSides = dataSeg.SIDES.vertices(...
-    vertcat(dataSeg.CELLS.sides{dataCells.numbers(dataCells.allCells.underAndOverCells)}),:);
+    vertcat(dataSeg.CELLS.sides{dataCells.cellIdx(dataCells.allCells.underAndOverCells)}),:);
 
 % Delete all the badly covered cells from the main structure
 dataCells.contourPo2D(clippedCellList) = [];
@@ -690,14 +690,14 @@ dataCells.area.areaProjTot(clippedCellList) = [];
 dataCells.area.areaRealPerFace(clippedCellList) = [];
 dataCells.area.areaRealTot(clippedCellList) = [];
 % dataCells.types(clippedCellList) = [];
-dataCells.numbers(clippedCellList) = [];
+dataCells.cellIdx(clippedCellList) = [];
 
 % Create the last SIDES copy for the good cells
 dataCells.SIDES.goodSides = dataSeg.SIDES.vertices(vertcat(...
-    dataSeg.CELLS.sides{dataCells.numbers}),:);
+    dataSeg.CELLS.sides{dataCells.cellIdx}),:);
 
 % Make sure than the total number of cells is unchanged 
-if sum(length(clippedCellList)+length(dataCells.numbers))~=...
+if sum(length(clippedCellList)+length(dataCells.cellIdx))~=...
         length(dataCells.allCells.numbers)
     % means that the number of cells kept + the number of deleted cells is
     % equal to the total number of cells
@@ -726,7 +726,7 @@ for meshFace = 1:length(dataCurv.faces)
 end
 
 % Use face plane coefficients to deproject the 2D contour on the mesh
-for bioCell = 1:numel(dataCells.numbers)
+for bioCell = 1:numel(dataCells.cellIdx)
     dataCells.cellContour3D{bioCell}.cellCt = ...
         dataCells.cellContour2D{bioCell}.cellCt;
     dataCells.cellContour3D{bioCell}.cellCt(:,3) = diag(...
@@ -790,7 +790,7 @@ function dataCells = cell2ellipse(dataCells,dataCurv,PARAMS)
 dataCells.planeFit = avPlaneOfFaces(dataCells,dataCurv.planeCoefPerFace);
 
 % Project 3D contour on average plane
-for bioCell = 1:length(dataCells.numbers)
+for bioCell = 1:length(dataCells.cellIdx)
     dataCells.cellContour3D{bioCell}.cellCtFlat = projPointOnPlane(dataCells.cellContour3D{bioCell}.cellCt,...
         dataCells.planeFit{bioCell}.geom3Dvectors);
 end
@@ -809,14 +809,14 @@ function dataCells = allDimEllipseFitting(dataCells,PARAMS)
 
 % for flatten contours
 [dataCells.cellContour3D, dataCells.ellipseFitError3D] =...
-    BioCellEllipseFitting(dataCells.cellContour3D,dataCells.numbers,3,PARAMS,'ellipseRotViaOri');
+    BioCellEllipseFitting(dataCells.cellContour3D,dataCells.cellIdx,3,PARAMS,'ellipseRotViaOri');
 
 % for old 2D contours
 [dataCells.cellContour2D, dataCells.ellipseFitError2D] =...
-    BioCellEllipseFitting(dataCells.cellContour2D,dataCells.numbers,2,PARAMS,'ellipseProj');
+    BioCellEllipseFitting(dataCells.cellContour2D,dataCells.cellIdx,2,PARAMS,'ellipseProj');
 
 % Replace the semiaxes into the ellipse space for simpler display
-for bioCell = 1:numel(dataCells.numbers)
+for bioCell = 1:numel(dataCells.cellIdx)
     dataCells.cellContour3D{bioCell}.ellipseRotViaOri = replaceSemiAxesInEllipseSpace...
         (dataCells.cellContour3D{bioCell}.ellipseRotViaOri);
     dataCells.cellContour2D{bioCell}.ellipseProj = replaceSemiAxesInEllipseSpace...
@@ -824,13 +824,13 @@ for bioCell = 1:numel(dataCells.numbers)
 end
 
 % Derotate the real space ellipse
-for bioCell = 1:numel(dataCells.numbers)
+for bioCell = 1:numel(dataCells.cellIdx)
     dataCells.cellContour3D{bioCell}.ellipseViaOri = ...
         derotateEllipseData(dataCells.cellContour3D{bioCell}.ellipseRotViaOri,dataCells.planeFit{bioCell});
 end
 
 % Relocate the real space ellipse into the mesh
-for bioCell = 1:numel(dataCells.numbers)
+for bioCell = 1:numel(dataCells.cellIdx)
     dataCells.cellContour3D{bioCell}.ellipseReal = relocateEllipseInMeshSpace...
         (dataCells.cellContour3D{bioCell}.ellipseViaOri, dataCells.cellContour3D{bioCell}.cellCtFlat);
 end
@@ -1019,7 +1019,7 @@ function dataCells = flattenContour(dataCells)
 normalVector = [0 0 1]; % final normal vector
 x0 = []; % no translation
 
-for bioCell = 1:length(dataCells.numbers)
+for bioCell = 1:length(dataCells.cellIdx)
     planNormal = dataCells.planeFit{bioCell}.normal;
     % Calculate rotation vector and amplitude
     dataCells.planeFit{bioCell}.angleRot = -acos(dot(normalVector,planNormal))*360 / (2*pi);
@@ -1062,8 +1062,8 @@ function planeFit = avPlaneOfFaces(dataCells, planeCoefPerFace)
 
 clear planeFit
 
-planeFit = cell(length(dataCells.numbers),1);
-for bioCell = 1:length(dataCells.numbers)
+planeFit = cell(length(dataCells.cellIdx),1);
+for bioCell = 1:length(dataCells.cellIdx)
     % plane equation is of the type avAlpha*x+avBeta*y+avGamma=z
     % equivalent to Ax+By+Cz+D = 0
     % With avAlpha = -A/C ; avBeta = -B/C ; avGamma = -D/C ; 
