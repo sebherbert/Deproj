@@ -33,7 +33,9 @@ dataCells.allCells.underCoveredCells = checkUnderCovered(dataCells,PARAMS);
 dataCells = cropOutCells( dataCells, dataSeg, PARAMS );
 
 % Display the croped out cells
-displayClipped(PARAMS,dataCurv,dataCells,dataSeg);
+if PARAMS.deployJunctNet % only if asked for the deployement of network junctions
+    displayClipped(PARAMS,dataCurv,dataCells,dataSeg);
+end
 
 end
 
@@ -122,13 +124,15 @@ dataCells.area.areaRealPerFace(clippedCellList) = [];
 dataCells.area.areaRealTot(clippedCellList) = [];
 dataCells.cellIdx(clippedCellList) = [];
 
-% Create the last SIDES copy for the good cells
-dataCells.SIDES.goodSides = dataSeg.SIDES.vertices(vertcat(...
-    dataSeg.CELLS.sides{dataCells.cellIdx}),:);
+if PARAMS.deployJunctNet % only if asked for the deployement of network junctions
+    % Create the last SIDES copy for the good cells
+    dataCells.SIDES.goodSides = dataSeg.SIDES.vertices(vertcat(...
+        dataSeg.CELLS.sides{dataCells.cellIdx}),:);
+end
 
 % Make sure than the total number of cells is unchanged 
 if sum(length(clippedCellList)+length(dataCells.cellIdx))~=...
-        length(dataCells.allCells.numbers)
+        length(dataCells.allCells.cellIdx)
     % means that the number of cells kept + the number of deleted cells is
     % equal to the total number of cells
     fprintf('WARNING : Coverage check malfunction (total number of cells)\n');
@@ -144,3 +148,36 @@ for meshFace = 1:length(dataCells.Face2Cell)
 end
 
 end
+
+
+function displayClipped(PARAMS, dataCurv, dataCells, dataSeg)
+% display the 2D segmentation and the 3D mesh
+% List of the different sides populations to plot
+sidesList{1} = dataCells.SIDES.goodSides;
+leg1 = sprintf('Good cells (N=%d)',length(dataCells.cellIdx));
+sidesList{2} = dataCells.SIDES.underSides;
+leg2 = sprintf('Undercovered cells (N=%d)',length(dataCells.allCells.underCoveredCells));
+sidesList{3} = dataCells.SIDES.overSides;
+leg3 = sprintf('Overcovered cells (N=%d)',length(dataCells.allCells.overCoveredCells));
+sidesList{4} = dataCells.SIDES.underOverSides;
+leg4 = sprintf('Under and Overcovered cells (N=%d)',length(dataCells.allCells.underAndOverCells));
+allVertices = dataSeg.VERTICES.XYs;
+% dispPARAMS: parameters of the display
+dispPARAMS{1}.LineWidth = 0.5;
+dispPARAMS{1}.EdgeColor = [0.5;0.5;0.5]';
+dispPARAMS{2}.LineWidth = 2;
+dispPARAMS{2}.EdgeColor = [0.64;0.08;0.18]';
+dispPARAMS{3}.LineWidth = 2;
+dispPARAMS{3}.EdgeColor = [0.20;0.41;0]';
+dispPARAMS{4}.LineWidth = 2;
+dispPARAMS{4}.EdgeColor = [1;0;1]';
+% Legends to be associated
+fullLegs = {leg1 leg2 leg3 leg4 'Mesh overlay'};
+
+displaySubPop(PARAMS,sidesList,allVertices,fullLegs,dispPARAMS,dataCurv);
+
+title('Rejected clipped cells');
+savefig(gcf,[PARAMS.outputFolder filesep 'rejected_clipped_cells']);
+export_fig([PARAMS.outputFolder filesep 'rejected_clipped_cells'],'-png','-m5');
+end
+
