@@ -111,7 +111,7 @@ se =strel('disk', 1);
 boundaries = cell( cc.NumObjects, 1 );
 
 % Extend each boundary to the center of the ridge
-for bioCell = 1 : cc.NumObjects
+parfor bioCell = 1 : cc.NumObjects
 
     % Exclude cells touching the image border.
     % TODO elsewhere?
