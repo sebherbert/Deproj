@@ -58,7 +58,7 @@ if nargin == 0
     
     % DEV ONLY
     outputFolder = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/output/';
-    segLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/GT_SegmentationResults-labels-1.tif';
+    segLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/GT_SegmentationResults-masks.tif';
     curveLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/LValonMultiC_elevMap_T1.tif';
     
 elseif nargin == 9
@@ -160,7 +160,8 @@ end
 
 
 %% Find which faces of the mesh are relevant for which cell of the projected seg
-[dataCells, dataCurv] = cell2face(dataCurv, dataCells);
+[dataCells.cell2Face, dataCells.Face2Cell, dataCurv.contour] = ...
+    cell2face(dataCurv, dataCells);
 
 %% Calculate the surface of each cell
 dataCells = cellSurface(dataCurv, dataCells);
@@ -351,8 +352,8 @@ axis([0 PARAMS.imSettings.x*PARAMS.imSettings.latPixSize...
     0 max( dataCurv.vertices(:,3) )]);
 end
 
-function [dataCells, dataCurv] = cell2face(dataCurv,dataCells)
-% cycle through each cell and finds wich face of the mesh idoFirstPassntersect
+function [cell2Face, Face2Cell, faceCoords] = cell2face(dataCurv,dataCells)
+% cycle through each cell and finds wich face of the mesh intersects
 % Numerical problems can occur when the polygons have a large offset from
 % the origin !
 
@@ -361,7 +362,7 @@ fprintf('Establishing the cell/mesh connectivity\n');
 % Preallocate structures
 cell2Face = cell(length(dataCells.cellIdx),1);
 Face2Cell = cell(size(dataCurv.faces,1),1);
-dataCurv.contour = cell(size(dataCurv.faces,1),1);
+faceCoords = cell(size(dataCurv.faces,1),1);
 
 % For every face of the mesh (first since it has to be reallocated into a
 % more manageable structure for every comparison)
@@ -375,19 +376,18 @@ for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
         tempTime = toc;
     end
     % allocate the triangular of the Mesh face
-    dataCurv.contour{meshTri} = vertcat(dataCurv.vertices(dataCurv.faces(meshTri,1),:),...
+    faceCoords{meshTri} = vertcat(dataCurv.vertices(dataCurv.faces(meshTri,1),:),...
         dataCurv.vertices(dataCurv.faces(meshTri,2),:),...
         dataCurv.vertices(dataCurv.faces(meshTri,3),:));
-    if ~ispolycw(dataCurv.contour{meshTri}(:,1),dataCurv.contour{meshTri}(:,2))
+    if ~ispolycw(faceCoords{meshTri}(:,1),faceCoords{meshTri}(:,2))
         % check and force clockwise ordering
-        [dataCurv.contour{meshTri}(:,1),dataCurv.contour{meshTri}(:,2)] = ...
-            poly2cw(dataCurv.contour{meshTri}(:,1), dataCurv.contour{meshTri}(:,2));
+        [faceCoords{meshTri}(:,1),faceCoords{meshTri}(:,2)] = ...
+            poly2cw(faceCoords{meshTri}(:,1), faceCoords{meshTri}(:,2));
     end
-    % end
     
     % for every cell of the mesh
     localFace2Cell = zeros(1, length(dataCells.cellIdx));
-    localContour = dataCurv.contour{meshTri};
+    localContour = faceCoords{meshTri};
     parfor bioCell = 1: length(dataCells.cellIdx)
         %         bioCell = 1000;
         [xInter, ~] = polybool('intersection', cellContour2D{bioCell}.cellCt(:,1),...
@@ -401,9 +401,6 @@ for meshTri = 1:size(dataCurv.faces,1) % USE A PARFOR HERE IF POSSIBLE !
     end
     Face2Cell{meshTri} = unique(localFace2Cell(localFace2Cell>0));
 end
-
-dataCells.cell2Face = cell2Face;
-dataCells.Face2Cell = Face2Cell;
 
 fprintf('Total time = %.1fs\n',toc);
 
@@ -689,7 +686,6 @@ dataCells.area.areaProjPerFace(clippedCellList) = [];
 dataCells.area.areaProjTot(clippedCellList) = [];
 dataCells.area.areaRealPerFace(clippedCellList) = [];
 dataCells.area.areaRealTot(clippedCellList) = [];
-% dataCells.types(clippedCellList) = [];
 dataCells.cellIdx(clippedCellList) = [];
 
 % Create the last SIDES copy for the good cells

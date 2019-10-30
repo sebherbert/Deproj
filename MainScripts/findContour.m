@@ -128,13 +128,13 @@ parfor bioCell = 1 : cc.NumObjects
        continue 
     end
         
-    boundaries{ bioCell } = b{ 1 };
+    boundaries{ bioCell }.cellCt = b{ 1 };
         
 end
 
 % Clean the cell structure of its empty positions
 for bioCell = cc.NumObjects : -1 : 1 
-    if isempty(boundaries{bioCell})
+    if isempty(boundaries{ bioCell })
         boundaries( bioCell ) = [];
     end
 end
@@ -148,7 +148,7 @@ end
 
 % Rescale to physical size
 for bioCell = 1 : numel(boundaries)
-    boundaries{ bioCell } = boundaries{ bioCell } * PARAMS.imSettings.latPixSize;
+    boundaries{ bioCell }.cellCt = boundaries{ bioCell }.cellCt * PARAMS.imSettings.latPixSize;
 end
 
 cellIdx = 1:numel(boundaries);
