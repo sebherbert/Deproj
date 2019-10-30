@@ -1,7 +1,8 @@
 
-%% finds the contour around a set of pixels originating from a previous segmentation 
 
 function boundaries = findContour( labelIm, PARAMS )
+%% finds the contour around a set of pixels originating from a previous segmentation 
+
 % find the correct order of the points defining the polygon contour of each
 % individual cell in a CW order
 
@@ -100,7 +101,10 @@ fprintf('Recreating the cellular contours\n');
 
 %%
 
-tic
+
+% Exclude cells touching the image border.
+labelIm = excludeBorderObjects( labelIm );
+
 % Find all the objects in the image
 cc = bwconncomp(labelIm, 4);
 
@@ -121,11 +125,12 @@ parfor bioCell = 1 : cc.NumObjects
     emptyImage = imdilate( emptyImage, se );
     
     b = bwboundaries( emptyImage, 8, 'noholes');
+    
     boundaries{ bioCell } = b{ 1 } * PARAMS.imSettings.latPixSize;
         
 end
-toc
-% figure
+
+% figure % => To display all the segmented cells
 % imshow( labelIm, [] )
 % hold on
 % for bioCell = 1 : cc.NumObjects
@@ -136,7 +141,28 @@ end
 
 
 
+function labelIm_NoBorder = excludeBorderObjects( labelIm )
+% Exclude objects that are connected to the border
+% Keep in mind that objects 1 pixel away from the border will not be
+% rejected!
+% Only works for label image
 
+% Copy original image
+labelIm_NoBorder = labelIm;
+
+% Find all the objects of interest
+objectsList2reject = unique( labelIm( : , 1) );
+objectsList2reject = unique( [ objectsList2reject ; labelIm( : , end) ] );
+objectsList2reject = unique( [ objectsList2reject ; labelIm( 1 , :)' ] );
+objectsList2reject = unique( [ objectsList2reject ; labelIm( end , :)' ] );
+
+% Set all objects to reject to 0
+for object = 1:numel(objectsList2reject)
+    labelIm_NoBorder( labelIm_NoBorder == objectsList2reject(object) ) = 0;
+end
+
+
+end
 
 
 
