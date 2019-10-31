@@ -46,7 +46,7 @@ if nargin == 0
     
     % Define axial step size (in um)
     PARAMS.imSettings.axPixSize = 0.5; % axial voxel size (in um)
-    PARAMS.imSettings.latPixSize = 0.2; % lateral voxel size (in um)
+    PARAMS.imSettings.latPixSize = 0.2076; % lateral voxel size (in um)
     
     PARAMS.maxTiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
     PARAMS.maxFaces = 300; % If need be, reduce the maximum number of faces for the mesh
@@ -59,7 +59,10 @@ if nargin == 0
     % DEV ONLY
     outputFolder = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/output/';
     segLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/GT_SegmentationResults-masks.tif';
-    curveLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/LValonMultiC_elevMap_T1.tif';
+    curveLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/LValon/input/Ground_truth_Height_map.tif';
+%     outputFolder = '/media/sherbert/Data/Projects/Own_Project/Deproj/NDray/output/';
+%     segLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/NDray/input_mesh_tifSeg/Unionseg_161210_gfapnlsgfp_hemi1_3_001.tif';
+%     curveLoc = '/media/sherbert/Data/Projects/Own_Project/Deproj/NDray/input_mesh_tifSeg/processedMesh_bin.ply';
     
 elseif nargin == 9
     fprintf('Using GUI input parameters\n');
@@ -210,91 +213,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%     END MAIN FUNCTION     %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%% 
 
-function dataCurv = loadCurve(PARAMS)
-%% Load as a mesh the curvature of the sample form a mesh of from a 2D elevation map
-
-if endsWith(PARAMS.curveLoc, '.ply')
-    % Load a 3D mesh produced by the MorphographX soft
-    dataCurv = loadMesh(PARAMS);
-elseif endsWith( PARAMS.curveLoc, '.tif' )
-    % Load an elevation map such as produced by LocalZProj transformed to a
-    % mesh format
-    dataCurv = loadElev(PARAMS);
-end
-
-% Calculate normals of the faces
-[dataCurv.normalV,dataCurv.normalF] = compute_normal(dataCurv.vertices,dataCurv.faces);
-
-end
-
-
-function dataCurv = loadElev(PARAMS)
-%% Load a 2D elevation map and format it as a mesh
-fprintf('Loading elevation map\n');
-tiffImage = imread(PARAMS.curveLoc);
-
-% Calculate the scaling factor
-scalingFactor = ceil( size(tiffImage,1)*size(tiffImage,2) / PARAMS.maxTiffImSize);
-
-% import and scale the image data
-z = double(tiffImage);
-z = imresize( z, sqrt(1/scalingFactor) );
-[x,y] = meshgrid(1:size(z,2),1:size(z,1));
-pointMat = [reshape(x,[],1),reshape(y,[],1),reshape(z,[],1)];
-pointMat(pointMat(:,3)<=1, :) = []; % => get rid of empty positions
-
-% Scale to spatial units
-pointMat(:,1) = pointMat(:,1) * (PARAMS.imSettings.latPixSize * sqrt(scalingFactor) );
-pointMat(:,2) = pointMat(:,2) * (PARAMS.imSettings.latPixSize * sqrt(scalingFactor) );
-pointMat(:,3) = pointMat(:,3) * PARAMS.imSettings.axPixSize;
-
-% Calculate 2D mesh
-tri = delaunay(pointMat(:,1),pointMat(:,2));
-% Create fv struct and populate it
-dataCurv = {};
-dataCurv.faces = tri;
-dataCurv.vertices = pointMat; % => vertices are pushed in 3D
-dataCurv = reducepatch(dataCurv,PARAMS.maxFaces,'verbose'); % reduce mesh size to a more
-[dataCurv.normalV,dataCurv.normalF] = compute_normal(dataCurv.vertices,dataCurv.faces);
-
-% patch('Faces', fv.faces, 'Vertices', fv.vertices, 'FaceVertexCData', fv.vertices(:,3), ...
-%     'FaceColor', 'interp', 'LineStyle', 'None');
-
-end
-
-function dataCurv = loadMesh(PARAMS)
-
-% load data
-% Add we GUI after original test phase
-fprintf('Loading mesh file\n');
-[dataCurv.vertices,dataCurv.faces] = read_ply(PARAMS.curveLoc);
-
- 
-% Correct the centering of the image. Default is that coordinates origin of the
-% mesh are in the center of the image while we need to force 0,0,0 in the
-% bottom left
-
-% Make sure the mesh z position is only in positive values, keep the
-% maximum offset between the lowest point and half the range of the
-% original if specified by the user
-axialOffset = max( PARAMS.imSettings.z*PARAMS.imSettings.axPixSize/2, ...
-    ceil( abs( min( dataCurv.vertices(:,3) ) ) ) );
-dataCurv.vertices = bsxfun( @plus,dataCurv.vertices,...
-    [ PARAMS.imSettings.x*PARAMS.imSettings.latPixSize/2 ...
-    PARAMS.imSettings.y*PARAMS.imSettings.latPixSize/2 ...
-    axialOffset ] );
-
-% Flip in Y the image for overlay with the 2D segmentation
-dataCurv.vertices(:,2) = abs(bsxfun(@minus,dataCurv.vertices(:,2),...
-    PARAMS.imSettings.y*PARAMS.imSettings.latPixSize));
-
-% If the number of faces is too high then reduce them
-if length(dataCurv.faces)>PARAMS.maxFaces
-    fprintf('Reducing the number of faces in the Mesh\n');
-    dataCurv = reducepatch(dataCurv,PARAMS.maxFaces,'verbose');    
-end
-
-end
 
 function [dataSeg, PARAMS] = loadSeg(PARAMS) 
 % load ridge image containing the segmentation.
