@@ -46,7 +46,7 @@ if nargin == 0
     
     % Define axial step size (in um)
     PARAMS.imSettings.axPixSize = 0.5; % axial voxel size (in um)
-    PARAMS.imSettings.latPixSize = 0.2076; % lateral voxel size (in um)
+    PARAMS.imSettings.latPixSize = 0.183; % lateral voxel size (in um)
     
     PARAMS.maxTiffImSize = 40000; % Limit the input image size when using an elevation map (in pix)
     PARAMS.maxFaces = 300; % If need be, reduce the maximum number of faces for the mesh
@@ -190,7 +190,7 @@ dataCells = checkCoverage(dataCells, dataCurv, dataSeg, PARAMS);
 dataCells = cell2ellipse(dataCells, dataCurv, PARAMS);
 
 %% Create a table output
-[tableOutputDeproj, tableOutputBell] = formatTableOuputSurfaceCombine(dataCells, dataSeg);
+tableOutputDeproj = formatTableOuputSurfaceCombine(dataCells, dataSeg);
 
 %% Saving output
 save([PARAMS.outputFolder filesep 'deprojectedData.mat'],...
@@ -629,19 +629,21 @@ for bioCell = 1:numel(dataCells.cellIdx)
 end
 dataCells.cellContour3D = dataCells.cellContour3D';
 
-% And the 2D sides on the mesh
-dataCells.VERTICES.XYZs = zeros(size(dataSeg.VERTICES.XYs,1),3);
-dataCells.VERTICES.XYZs = dataSeg.VERTICES.XYs;
-for vertex = 1:length(dataCells.VERTICES.vertexOnFace)
-    if dataCells.VERTICES.vertexOnFace(vertex)==0
-        % when the vertex is not under the mesh, keep its z position at 0
-        continue
+if PARAMS.deployJunctNet
+    % And the 2D sides on the mesh
+    dataCells.VERTICES.XYZs = zeros(size(dataSeg.VERTICES.XYs,1),3);
+    dataCells.VERTICES.XYZs = dataSeg.VERTICES.XYs;
+    for vertex = 1:length(dataCells.VERTICES.vertexOnFace)
+        if dataCells.VERTICES.vertexOnFace(vertex)==0
+            % when the vertex is not under the mesh, keep its z position at 0
+            continue
+        end
+        dataCells.VERTICES.XYZs(vertex,3) = horzcat(dataCells.VERTICES.XYZs(vertex,1:2),ones(1)) * ...
+            dataCurv.planeCoefPerFace(dataCells.VERTICES.vertexOnFace(vertex),:)';
     end
-    dataCells.VERTICES.XYZs(vertex,3) = horzcat(dataCells.VERTICES.XYZs(vertex,1:2),ones(1)) * ...
-        dataCurv.planeCoefPerFace(dataCells.VERTICES.vertexOnFace(vertex),:)';
-end
 
-displayDeprojected(PARAMS,dataCurv,dataCells)
+    displayDeprojected(PARAMS,dataCurv,dataCells)
+end
 
 end
 
