@@ -21,6 +21,15 @@ end
 % Calculate normals of the faces
 [dataCurv.normalV,dataCurv.normalF] = compute_normal(dataCurv.vertices,dataCurv.faces);
 
+% enforce that the normals are upward, by ensuring that most normals are
+% upward
+if sum( dataCurv.normalF( 3 , : ) < 0 ) > size( dataCurv.normalF , 2 ) / 2
+    % flip
+    dataCurv.normalV = -dataCurv.normalV;
+    dataCurv.normalF = -dataCurv.normalF;
+end
+
+
 end
 
 
@@ -51,10 +60,6 @@ dataCurv = {};
 dataCurv.faces = tri;
 dataCurv.vertices = pointMat; % => vertices are pushed in 3D
 dataCurv = reducepatch(dataCurv,PARAMS.maxFaces,'verbose'); % reduce mesh size to a more
-[dataCurv.normalV,dataCurv.normalF] = compute_normal(dataCurv.vertices,dataCurv.faces);
-
-% patch('Faces', fv.faces, 'Vertices', fv.vertices, 'FaceVertexCData', fv.vertices(:,3), ...
-%     'FaceColor', 'interp', 'LineStyle', 'None');
 
 end
 
