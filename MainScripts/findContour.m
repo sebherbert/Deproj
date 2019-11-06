@@ -47,7 +47,7 @@ parfor bioCell = 1 : cc.NumObjects
        continue 
     end
         
-    boundaries{ bioCell }.cellCt = b{ 1 };
+    boundaries{ bioCell }.cellCtPix = b{ 1 };
         
 end
 
@@ -62,12 +62,12 @@ end
 % imshow( labelIm, [] )
 % hold on
 % for bioCell = 1 : numel(boundaries)
-%     line( boundaries{ bioCell }(:,2), boundaries{ bioCell }(:,1) , 'Marker', '.' )  
+%     line( boundaries{ bioCell }.cellCt(:,2), boundaries.cellCt{ bioCell }(:,1) , 'Marker', '.' )  
 % end
 
 % Rescale to physical size
 for bioCell = 1 : numel(boundaries)
-    boundaries{ bioCell }.cellCt = boundaries{ bioCell }.cellCt * PARAMS.imSettings.latPixSize;
+    boundaries{ bioCell }.cellCt = boundaries{ bioCell }.cellCtPix * PARAMS.imSettings.latPixSize;
 end
 
 cellIdx = 1:numel(boundaries);
