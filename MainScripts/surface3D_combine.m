@@ -161,6 +161,12 @@ end
 % % create triangulated areas Check with polygon intersection instead
 % dataCells = polygon2surface(dataCells);
 
+%% recreate the cell junctions network for lighter display
+% don't use polygon decimation for it will modify the boundaries, hence the
+% cells won't join anymore.
+segNetwork = f
+
+
 %% delete cells at the boundary of the mesh or at the boundary of forbidden areas such as too steep angles
 
 
@@ -196,11 +202,11 @@ tableOutputDeproj = formatTableOuputSurfaceCombine(dataCells, dataSeg);
 save([PARAMS.outputFolder filesep 'deprojectedData.mat'],...
     'dataCells','dataCurv','dataSeg','PARAMS');
 
-% save([PARAMS.outputFolder filesep 'deprojectedTable.mat'],'tableOutputDeproj');
-save('deprojectedTable.mat','tableOutputDeproj');
+save([PARAMS.outputFolder filesep 'deprojectedTable.mat'],'tableOutputDeproj');
+% save('deprojectedTable.mat','tableOutputDeproj');
 
 % save([PARAMS.outputFolder filesep 'bellaicheTable.mat'],'tableOutputBell');
-save('bellaicheTable.mat','tableOutputBell');
+% save('bellaicheTable.mat','tableOutputBell');
 
 %% Display final maps
 displayCombinedMap(tableOutputDeproj,tableOutputBell,dataCells.cellContour3D,PARAMS.outputFolder)
