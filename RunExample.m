@@ -148,9 +148,13 @@ for i = 1 : n_objects
     
     [ area, uncorr_area ] = area3d( o );
     [ perim, uncorr_perim ] = perimeter3d( o );
+    [ f, E ] = fit_ellipse( o );
     
+    objects( i ).id = i;
     objects( i ).area = area;
     objects( i ).perimeter = perim;
+    objects( i ).euler_angles = E;
+    objects( i ).ellipse_fit = f;
     
     uncorr = struct();
     uncorr.area = uncorr_area;
@@ -185,11 +189,12 @@ for i = 1 : n_objects
     o = objects( i );
     P = o.boundary;
     
-    err = o.perimeter / o.uncorr.perimeter - 1;
+%     err = o.perimeter / o.uncorr.perimeter - 1;
+    err = abs( o.euler_angles( 2 ) );
     
     patch( P(:,1), P(:,2), P(:,3), err, ...
         'LineWidth', 2 );
-    text( o.center(1), o.center(2), o.center(3) + 0.5, num2str( i ), ...
+    text( o.center(1), o.center(2), o.center(3) + 0.5, num2str( o.id ), ...
         'HorizontalAlignment', 'center', ...
         'VerticalAlignment', 'middle' )
     
