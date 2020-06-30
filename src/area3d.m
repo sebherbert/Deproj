@@ -3,15 +3,11 @@ function [ area, uncorr_area ] = area3d( o )
     
     %% Deprojected 3D version.
     
-    p = o.boundary;
+     % Put all vertex coordinates with respect to center.
+    p = centered_points( o );
 
     n_vertices = size( p, 1 );
 
-    % Put all vertex coordinates with respect to center.
-    center = mean( p );
-    center = repmat( center, [ n_vertices, 1 ] );
-    p = p - center;
-    
     % Build small triangles.
     index = [ 2 : n_vertices 1 ];
     p1 = p;
