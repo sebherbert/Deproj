@@ -1,6 +1,9 @@
-function area = area3d( p )
-%AREA3D Computes the area of a 3D closed polygon.
-%   p must be a Nx3 matrix.
+function [ area, uncorr_area ] = area3d( o )
+%AREA3D Computes the area of the object.
+    
+    %% Deprojected 3D version.
+    
+    p = o.boundary;
 
     n_vertices = size( p, 1 );
 
@@ -25,7 +28,14 @@ function area = area3d( p )
 
     % Total positive area.
     area = sum( area_triangle ) / 2;
-        
+    
+    %% 2D area.
+    
+    uncorr_area = polyarea( o.boundary(:,1), o.boundary(:,2) );
+    
+    
+    %% Subfunction.
+    
     function n = euclidean_norm( v )
         n = sqrt( sum( v .* v, ndims( v ) ) );
     end

@@ -146,15 +146,15 @@ for i = 1 : n_objects
     
     o = objects( i );
     
-    area = area3d( o.boundary );
-    perim = perimeter3d( o.boundary );
+    [ area, uncorr_area ] = area3d( o );
+    [ perim, uncorr_perim ] = perimeter3d( o );
     
     objects( i ).area = area;
     objects( i ).perimeter = perim;
     
     uncorr = struct();
-    uncorr.area = polyarea( o.boundary(:,1), o.boundary(:,2) );
-    uncorr.perimeter = perimeter3d( o.boundary( :, 1:2 ) );
+    uncorr.area = uncorr_area;
+    uncorr.perimeter = uncorr_perim;
     objects( i ).uncorr = uncorr;
     
 end
