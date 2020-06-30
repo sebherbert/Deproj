@@ -147,11 +147,14 @@ for i = 1 : n_objects
     o = objects( i );
     
     area = area3d( o.boundary );
+    perim = perimeter3d( o.boundary );
+    
+    objects( i ).area = area;
+    objects( i ).perimeter = perim;
     
     uncorr = struct();
     uncorr.area = polyarea( o.boundary(:,1), o.boundary(:,2) );
-    
-    objects( i ).area = area;
+    uncorr.perimeter = perimeter3d( o.boundary( :, 1:2 ) );
     objects( i ).uncorr = uncorr;
     
 end
@@ -181,7 +184,10 @@ for i = 1 : n_objects
     
     o = objects( i );
     P = o.boundary;
-    patch( P(:,1), P(:,2), P(:,3), o.area / o.uncorr.area, ...
+    
+    err = o.perimeter / o.uncorr.perimeter - 1;
+    
+    patch( P(:,1), P(:,2), P(:,3), err, ...
         'LineWidth', 2 );
     text( o.center(1), o.center(2), o.center(3) + 0.5, num2str( i ), ...
         'HorizontalAlignment', 'center', ...
