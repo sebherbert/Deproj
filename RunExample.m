@@ -1,6 +1,6 @@
 %% Example de-projection script.
 
-%% clear all.
+%% Clear all.
 
 close all
 clear
@@ -18,14 +18,14 @@ root_folder = 'samples';
 % the code below will convert it into a list of objects.
 % For this to work, the mask image must be an 'ImageJ' mask, that is: the
 % cell contours must be black (pixel value == 0) and the cell interiors
-% must be white (pipxel value > 0).
-mask_filename       = 'Segmentation.tif';
+% must be white (pixel value > 0).
+mask_filename       = 'Segmentation-2.tif';
 
 % The height-map is an image that stores at every pixel the location of the
 % plane of interest in the source 3D image. Since the pixel values store 
 % the index of the plane, we will need to convert it to an elevation in µm
 % (see the voxel_depth parameter below).
-heightmap_filename   = 'HeightMap.tif';
+heightmap_filename   = 'HeightMap-2.tif';
 
 % Pixel XY size.
 % Physical size of a pixel in X and Y. This will be used to report sizes in
@@ -36,6 +36,10 @@ pixel_size = 0.183; % µm
 % How many µm bewtween each Z-slices. We need this to convert the
 % height-map values, that stores the plane of interest, into µm.
 voxel_depth = 1.; % µm
+
+% Try to remove objects that have a Z position equal to 0. Normally this
+% value reports objects that are out of the region-of-interest.
+prune_zeros = true;
 
 %% Read a mask file and convert it to objects.
 
@@ -52,36 +56,67 @@ n_junctions = numel( junction_graph.Nodes );
 fprintf('Converted a %d x %d mask in %.1f seconds. Found %d objects and %d junctions.\n', ...
     size(I,1), size(I,2), toc, n_objects, n_junctions )
 
-% Scale junction XY coordinates in µm.
+%% Compute some scale of an object radius.
+
+% Median area (pixel units)
+med_area = median(arrayfun( @(s) polyarea( s.boundary(:,1), s.boundary(:,2) ),  ...
+    objects ) ); % pixels^2
+
+object_scale = 2 * sqrt( med_area )/ pi; % pixel units
+
+fprintf('Typical object scale: %.1f pixels or %.2f µm.\n', ...
+    object_scale, object_scale * pixel_size )
+
+
+%% Scale to physical coordinates.
+
+% Scale junction XY coordinates to µm.
 junction_graph.Nodes.Centroid( :, 1:2 ) = junction_graph.Nodes.Centroid( :, 1:2 ) * pixel_size;
+
+% Scale object XY boundary to µm.
+for i = 1 : n_objects
+    objects( i ).boundary   = objects( i ).boundary * pixel_size;
+    objects( i ).center     = objects( i ).center * pixel_size;
+end
 
 %% Load the height-map and add the Z coordinates to objects.
 
 fprintf('Opening height-map image: %s\n', heightmap_filename )
 H = imread( fullfile( root_folder, heightmap_filename ) );
 
+if prune_zeros
+    mask = H == 0;
+    H = regionfill( H, mask );
+    H( H == 0 ) = NaN;
+end
+
+% Smooth the height-map over a scale smaller than a cell.
+H = imgaussfilt( H, object_scale );
+
 % For junction.
-xy_junction = round( junction_graph.Nodes.Centroid / pixel_size ); % in pixel units.
-xy_junction_ind = sub2ind( size(H),  xy_junction(:,2), xy_junction(:,1) );
-z_junction = H( xy_junction_ind ) * voxel_depth; % in µm.
+z_junction = get_z( junction_graph.Nodes.Centroid, H, pixel_size, voxel_depth );
+
+% For objects.
+for i = 1 : n_objects
+    z_obj = get_z( objects( i ).boundary, H, pixel_size, voxel_depth );
+    objects( i ).boundary = [ objects( i ).boundary z_obj ];
+    objects( i ).center(3) = mean( z_obj );
+end
 
 %% Possibly remove the junctions and cells found at z = 0.
 
-prune_zeros = true; % remove junctions found at z = 0.
-
 if prune_zeros
     
-    bad_junctions = find( z_junction == 0 );
+    bad_junctions = find( z_junction == 0 | isnan( z_junction ) );
     junction_graph = junction_graph.rmnode( bad_junctions );
     z_junction( bad_junctions ) = [];
 
     fprintf( 'Removed %d junctions at Z=0.\n', numel( bad_junctions ) )
-
     
     objects_to_prune = false( n_objects, 1 );
     for i = 1 : numel( objects )
         o = objects( i );
-        if ~isempty( intersect( bad_junctions, o.junctions ) )
+        if any( isnan( o.boundary(:) ) ) || ~isempty( intersect( bad_junctions, o.junctions ) )
             objects_to_prune( i ) = true;
         end        
     end
@@ -89,30 +124,71 @@ if prune_zeros
     objects( objects_to_prune ) = [];
     fprintf( 'Removed %d objects touching these junctions.\n', sum( objects_to_prune ) )
     
+   n_objects = numel( objects );
+   n_junctions = numel( junction_graph.Nodes );
+    
 end
 
 %% Invert Z position for plotting.
 
-z_junction = max( z_junction ) -  z_junction;
+max_z = max( z_junction );
+z_junction = max_z -  z_junction;
 junction_graph.Nodes.Centroid = [ junction_graph.Nodes.Centroid z_junction ];
+
+for i = 1 : n_objects    
+    objects( i ).boundary( :, 3 ) = max_z - objects( i ).boundary( :, 3 );
+    objects( i ).center( 3 ) = max_z - objects( i ).center( 3 );
+end
+
+%% Compute object de-projected area.
+
+for i = 1 : n_objects
+    
+    o = objects( i );
+    
+    area = area3d( o.boundary );
+    
+    uncorr = struct();
+    uncorr.area = polyarea( o.boundary(:,1), o.boundary(:,2) );
+    
+    objects( i ).area = area;
+    objects( i ).uncorr = uncorr;
+    
+end
 
 
 %% Plot the segmentation.
+
 figure
-imshow( ~I , [ 0 2 ], ...
-    'Border', 'tight', ...
-    'XData', [ 1 size( I, 1 ) ] * pixel_size, ... 
-    'YData', [ 1 size( I, 2 ) ] * pixel_size )
+% imshow( ~I, [ 0 2 ], ...
+%     'Border', 'tight', ...
+%     'XData', [ 1 size( I, 2 ) ] * pixel_size, ... 
+%     'YData', [ 1 size( I, 1 ) ] * pixel_size )
 hold on
 
-plot( junction_graph, ...
-    'XData', junction_graph.Nodes.Centroid(:,1), ...
-    'YData', junction_graph.Nodes.Centroid(:,2), ...
-    'ZData', junction_graph.Nodes.Centroid(:,3), ...
-    'LineWidth', 2, ...
-    'EdgeColor', 'b', ...
-    'EdgeAlpha', 1, ...
-    'Marker', 'o', ...
-    'MarkerSize', 4, ...
-    'NodeColor', 'r' )
+% plot( junction_graph, ...
+%     'XData', junction_graph.Nodes.Centroid(:,1), ...
+%     'YData', junction_graph.Nodes.Centroid(:,2), ...
+%     'ZData', junction_graph.Nodes.Centroid(:,3), ...
+%     'LineWidth', 2, ...
+%     'EdgeColor', 'b', ...
+%     'EdgeAlpha', 1, ...
+%     'Marker', 'o', ...
+%     'MarkerSize', 4, ...
+%     'NodeColor', 'r' ) 
+
+for i = 1 : n_objects
+    
+    o = objects( i );
+    P = o.boundary;
+    patch( P(:,1), P(:,2), P(:,3), o.area / o.uncorr.area, ...
+        'LineWidth', 2 );
+    text( o.center(1), o.center(2), o.center(3) + 0.5, num2str( i ), ...
+        'HorizontalAlignment', 'center', ...
+        'VerticalAlignment', 'middle' )
+    
+end
+
 axis equal
+colorbar
+
