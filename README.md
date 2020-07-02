@@ -1,5 +1,10 @@
 # DeProj HOW TO
 
+## Requirements.
+
+We use builtin functions introduced in MATLAB R2019b. 
+So you need at least this version.
+
 ## Launch the program
 The method can both be called in a GUI and by the command line of MATLAB
 1. To call the method using the GUI:
