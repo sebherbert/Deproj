@@ -135,32 +135,17 @@ max_z = max( z_junction );
 z_junction = max_z -  z_junction;
 junction_graph.Nodes.Centroid = [ junction_graph.Nodes.Centroid z_junction ];
 
-for i = 1 : n_objects    
+for i = 1 : n_objects
     objects( i ).boundary( :, 3 ) = max_z - objects( i ).boundary( :, 3 );
     objects( i ).center( 3 ) = max_z - objects( i ).center( 3 );
 end
 
-%% Compute object de-projected area.
+%% Create epicell instances.
 
-for i = 1 : n_objects
-    
+epicells = repmat( epicell, n_objects, 1 );
+for i = 1 : n_objects    
     o = objects( i );
-    
-    [ area, uncorr_area ] = area3d( o );
-    [ perim, uncorr_perim ] = perimeter3d( o );
-    [ f, E ] = fit_ellipse( o );
-    
-    objects( i ).id = i;
-    objects( i ).area = area;
-    objects( i ).perimeter = perim;
-    objects( i ).euler_angles = E;
-    objects( i ).ellipse_fit = f;
-    
-    uncorr = struct();
-    uncorr.area = uncorr_area;
-    uncorr.perimeter = uncorr_perim;
-    objects( i ).uncorr = uncorr;
-    
+    epicells( i ) = epicell( o.boundary, o.junctions, i  );
 end
 
 
@@ -200,7 +185,7 @@ axis equal
 
 for i = 1 : n_objects
     
-    o = objects( i );
+    o = epicells( i );
     P = o.boundary;
     
     %     err = o.perimeter / o.uncorr.perimeter - 1;

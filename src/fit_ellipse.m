@@ -1,4 +1,4 @@
-function [ f, E ] = fit_ellipse( o )
+function f = fit_ellipse( p, E )
 %FIT_ELLIPSE Fit a 2D ellipse to the 3D points.
 %   The fit requires the Euler angles of the plane fitted through the
 %   opints, so that we can project them on this plane. We then make a 2D 
@@ -8,11 +8,12 @@ function [ f, E ] = fit_ellipse( o )
 %   Greatly inspired from 
 % https://stackoverflow.com/questions/29051168/data-fitting-an-ellipse-in-3d-space
 
-     p = double( centered_points( o ) );
-    
     % Fit a plane to these points.
-    [ ~, ~, v ] = svd( p );
-    E = rot2eulerZXZ( v );
+    if nargin < 2
+        [ ~, ~, v ] = svd( p );
+    else
+        v = euleurZXZ2rot( E );
+    end
     
     % Rotate the points into the principal axes frame.
     p = p * v;
