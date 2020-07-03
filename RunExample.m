@@ -166,12 +166,26 @@ end
 
 %% Plot the segmentation.
 
-figure
+close all
+
+figure( 'Position', [ 1204 20 600 1000 ] )
 % imshow( ~I, [ 0 2 ], ...
 %     'Border', 'tight', ...
 %     'XData', [ 1 size( I, 2 ) ] * pixel_size, ... 
 %     'YData', [ 1 size( I, 1 ) ] * pixel_size )
+
+ax1 = subplot( 3, 1, 1 );
 hold on
+axis equal
+
+ax2 = subplot( 3, 1, 2 );
+hold on
+axis equal
+
+ax3 = subplot( 3, 1, 3 );
+hold on
+axis equal
+
 
 % plot( junction_graph, ...
 %     'XData', junction_graph.Nodes.Centroid(:,1), ...
@@ -189,17 +203,35 @@ for i = 1 : n_objects
     o = objects( i );
     P = o.boundary;
     
-%     err = o.perimeter / o.uncorr.perimeter - 1;
-    err = abs( o.euler_angles( 2 ) );
+    %     err = o.perimeter / o.uncorr.perimeter - 1;
     
-    patch( P(:,1), P(:,2), P(:,3), err, ...
+    alpha = rad2deg( o.euler_angles( 1 ) );
+    beta = rad2deg(o.euler_angles( 2 ) );
+    gamma = rad2deg(o.euler_angles( 3 ) );
+    
+    if alpha < 0
+        alpha = 180 + alpha;
+    end
+    
+    if beta > 90
+        beta = 180 - beta;
+    end
+    
+    patch( ax1, P(:,1), P(:,2), P(:,3), alpha, ...
         'LineWidth', 2 );
-    text( o.center(1), o.center(2), o.center(3) + 0.5, num2str( o.id ), ...
-        'HorizontalAlignment', 'center', ...
-        'VerticalAlignment', 'middle' )
+    patch( ax2, P(:,1), P(:,2), P(:,3), beta, ...
+        'LineWidth', 2 );
+    patch( ax3, P(:,1), P(:,2), P(:,3), gamma, ...
+        'LineWidth', 2 );
+%     text( ax1,  o.center(1), o.center(2), o.center(3) + 0.5, num2str( o.id ), ...
+%         'HorizontalAlignment', 'center', ...
+%         'VerticalAlignment', 'middle' )
     
 end
 
-axis equal
-colorbar
+colormap( ax1, 'hsv' )
+colorbar(ax1)
+colorbar(ax2)
+colormap( ax3, 'hsv' )
+colorbar(ax3)
 
