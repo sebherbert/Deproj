@@ -23,16 +23,25 @@ classdef epicell
                 return
             end
             
+            % Reduce polygon in 2D then put back Z. Takes time.
+            p2d = boundary( :, 1 : 2 );
+            p2d_reduced = reducepoly( p2d, 0.005 );
+            [ ~, ia, ib ] = intersect( p2d, p2d_reduced, 'rows', 'stable' );            
+            boundary_reduced = [ p2d_reduced( ib, : ) boundary( ia, 3 ) ];
+            
             % Base properties.
-            obj.boundary = boundary;
+            obj.boundary = boundary_reduced;
             obj.junction_ids = junction_ids;
             obj.id = id;
             obj.center = mean( boundary );
             
-            % Morphological descriptors.
+            % Morphological descriptors on downsampled boundary.
+            p_reduced = epicell.centered_points( boundary_reduced );
+            [ obj.area, obj.uncorrected_area ] = epicell.area3d( p_reduced );
+            [ obj.perimeter, obj.uncorrected_perimeter ] = epicell.perimeter3d( p_reduced );
+            
+            % Morphological descriptors on non-downsampled boundary.
             p = epicell.centered_points( boundary );
-            [ obj.area, obj.uncorrected_area ] = epicell.area3d( p );
-            [ obj.perimeter, obj.uncorrected_perimeter ] = epicell.perimeter3d( p );
             obj.euler_angles = epicell.fit_plane( p );
             obj.ellipse_fit = fit_ellipse( p, obj.euler_angles );            
         end

@@ -50,7 +50,10 @@ I = imread( fullfile( root_folder, mask_filename ) );
 % The conversion can take up to 30s for a 1000 x 1000 mask image.
 fprintf('Converting mask to objects.\n' )
 tic 
-[ objects, junction_graph ] = mask_to_objects( I );
+% We will downsample later: for now we will need all the pixels to have a
+% robust estimate of the ellipse and plane fit.
+downsample = false;
+[ objects, junction_graph ] = mask_to_objects( I, downsample );
 n_objects = numel( objects );
 n_junctions = numel( junction_graph.Nodes );
 fprintf('Converted a %d x %d mask in %.1f seconds. Found %d objects and %d junctions.\n', ...
@@ -148,75 +151,9 @@ for i = 1 : n_objects
     epicells( i ) = epicell( o.boundary, o.junctions, i  );
 end
 
-
-%% Plot the segmentation.
+%% Plot euler angles.
 
 close all
+plot_fit_plane( epicells );
 
-figure( 'Position', [ 1204 20 600 1000 ] )
-% imshow( ~I, [ 0 2 ], ...
-%     'Border', 'tight', ...
-%     'XData', [ 1 size( I, 2 ) ] * pixel_size, ... 
-%     'YData', [ 1 size( I, 1 ) ] * pixel_size )
-
-ax1 = subplot( 3, 1, 1 );
-hold on
-axis equal
-
-ax2 = subplot( 3, 1, 2 );
-hold on
-axis equal
-
-ax3 = subplot( 3, 1, 3 );
-hold on
-axis equal
-
-
-% plot( junction_graph, ...
-%     'XData', junction_graph.Nodes.Centroid(:,1), ...
-%     'YData', junction_graph.Nodes.Centroid(:,2), ...
-%     'ZData', junction_graph.Nodes.Centroid(:,3), ...
-%     'LineWidth', 2, ...
-%     'EdgeColor', 'b', ...
-%     'EdgeAlpha', 1, ...
-%     'Marker', 'o', ...
-%     'MarkerSize', 4, ...
-%     'NodeColor', 'r' ) 
-
-for i = 1 : n_objects
-    
-    o = epicells( i );
-    P = o.boundary;
-    
-    %     err = o.perimeter / o.uncorr.perimeter - 1;
-    
-    alpha = rad2deg( o.euler_angles( 1 ) );
-    beta = rad2deg(o.euler_angles( 2 ) );
-    gamma = rad2deg(o.euler_angles( 3 ) );
-    
-    if alpha < 0
-        alpha = 180 + alpha;
-    end
-    
-    if beta > 90
-        beta = 180 - beta;
-    end
-    
-    patch( ax1, P(:,1), P(:,2), P(:,3), alpha, ...
-        'LineWidth', 2 );
-    patch( ax2, P(:,1), P(:,2), P(:,3), beta, ...
-        'LineWidth', 2 );
-    patch( ax3, P(:,1), P(:,2), P(:,3), gamma, ...
-        'LineWidth', 2 );
-%     text( ax1,  o.center(1), o.center(2), o.center(3) + 0.5, num2str( o.id ), ...
-%         'HorizontalAlignment', 'center', ...
-%         'VerticalAlignment', 'middle' )
-    
-end
-
-colormap( ax1, 'hsv' )
-colorbar(ax1)
-colorbar(ax2)
-colormap( ax3, 'hsv' )
-colorbar(ax3)
 
