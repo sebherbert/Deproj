@@ -12,7 +12,7 @@ function [ f, E ] = fit_ellipse( o )
     
     % Fit a plane to these points.
     [ ~, ~, v ] = svd( p );
-    E = to_euler( v );
+    E = rot2eulerZXZ( v );
     
     % Rotate the points into the principal axes frame.
     p = p * v;
@@ -24,26 +24,6 @@ function [ f, E ] = fit_ellipse( o )
     
     %% Subfunctions
     
-    function E = to_euler( R )
-        if R( 1, 3 ) == 1 || R( 1, 3 ) == -1
-            E3 = 0;
-            dlta = atan2(R(1,2),R(1,3));
-            if R(1,3) == -1
-                E2 = pi/2;
-                E1 = E3 + dlta;
-            else
-                E2 = -pi/2;
-                E1 = -E3 + dlta;
-            end
-        else
-            E2 = - asin( R( 1, 3 ) );
-            E1 = atan2( R( 2, 3 ) / cos( E2 ), R( 3, 3 ) / cos( E2 ) );
-            E3 = atan2( R( 1, 2 ) / cos( E2 ), R( 1, 1 ) / cos( E2 ) );
-        end
-        E = [ E1, E2, E3 ];
-        
-    end
-
     function f = quadratic_to_cartesian( A )
     % Equations taken from Wolfram website.
         
