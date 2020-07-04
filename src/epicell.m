@@ -138,6 +138,8 @@ classdef epicell
         end
         
         function E = fit_plane( p )
+            c = mean( p );
+            p = p - repmat( c, size( p, 1 ), 1 );
             % Fit a plane to these points.
             [ ~, ~, v ] = svd( p );
             E = rot2eulerZXZ( v );
