@@ -45,6 +45,34 @@ classdef epicell
             obj.euler_angles = epicell.fit_plane( p );
             obj.ellipse_fit = fit_ellipse( p, obj.euler_angles );            
         end
+        
+        function h = plot_patch_2d( obj, val )
+            p = obj.boundary;
+            h = patch( p(:,1), p(:,2), val, ...
+                'LineWidth', 2 );
+        end
+        
+        function h = plot_patch_3d( obj, val )
+            p = obj.boundary;
+            h = patch( p(:,1), p(:,2), p(:,3), val, ...
+                'LineWidth', 2 );
+        end
+        
+        function h = plot_contour_2d( obj )
+            p = obj.boundary;
+            p = [ p ; p(1,:) ];
+            h = line( p(:,1), p(:,2), ...
+                'LineWidth', 1, ...
+                'Marker', '.' );
+        end
+        
+        function h = plot_contour_3d( obj )
+            p = obj.boundary;
+            p = [ p ; p(1,:) ];
+            h = line( p(:,1), p(:,2), p(:,3), ...
+                'LineWidth', 1, ...
+                'Marker', '.' );
+        end
     end
     
     %% Static methods: compute final properties value.
