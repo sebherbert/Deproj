@@ -4,6 +4,10 @@ function hts = add_plot_euler_gamma( obj, ax )
     epicells = obj.epicells;
     angles = vertcat( epicells.euler_angles );
     gammas = rad2deg( angles( :, 3 ) );
+    
+    neg_gammas = gammas < 0;
+    gammas( neg_gammas ) = 180 + gammas( neg_gammas );
+    
     hts = add_plot_variable( obj, gammas, ax );
 end
 
