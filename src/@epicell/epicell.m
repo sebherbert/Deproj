@@ -10,6 +10,7 @@ classdef epicell
         perimeter
         euler_angles
         ellipse_fit
+        eccentricity
         uncorrected_area
         uncorrected_perimeter
         id
@@ -43,7 +44,13 @@ classdef epicell
             % Morphological descriptors on non-downsampled boundary.
             p = epicell.centered_points( boundary );
             obj.euler_angles = epicell.fit_plane( p );
-            obj.ellipse_fit = epicell.fit_ellipse_3d( boundary, obj.euler_angles );            
+            obj.ellipse_fit = epicell.fit_ellipse_3d( boundary, obj.euler_angles );
+            
+            % Derived morphological descriptors.
+            a = obj.ellipse_fit( 4 );
+            b = obj.ellipse_fit( 5 );
+            obj.eccentricity = sqrt( 1 - ( b/a) * (b/a) );
+            
         end
         
         function h = plot_patch_2d( obj, val )
