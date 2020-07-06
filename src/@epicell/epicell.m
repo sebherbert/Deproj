@@ -11,6 +11,7 @@ classdef epicell
         euler_angles
         ellipse_fit
         eccentricity
+        proj_direction
         uncorrected_area
         uncorrected_perimeter
         id
@@ -50,6 +51,9 @@ classdef epicell
             a = obj.ellipse_fit( 4 );
             b = obj.ellipse_fit( 5 );
             obj.eccentricity = sqrt( 1 - ( b/a) * (b/a) );
+            obj.proj_direction = epicell.compute_proj_direction( ...
+                obj.ellipse_fit, ...
+                epicell.euleurZXZ2rot( obj.euler_angles ) );
             
         end
         
@@ -152,7 +156,36 @@ classdef epicell
             E = epicell.rot2eulerZXZ( v );
         end
         
-       
+        function sigma = compute_proj_direction( f3d, v )
+        % Computes the angle of the semi-major axis of the ellipse,
+        % projected on the XY plane. There is probably an analytical way to
+        % do it, but I could not find it.
+            
+            % Ellipse semi-major axis arrow.
+            a = f3d( 4 );
+            theta = f3d( 6 );
+            
+            % In ellipse referential.
+            arrow_x = [ -a ; a ];
+            arrow_y = [ 0; 0 ];
+            Ar0 =  [ arrow_x, arrow_y ];
+            
+            % In epicell plane referential.
+            R = [   cos( theta ) sin( theta ) ;
+                -sin( theta ) cos( theta ) ] ;
+            Ar1 = Ar0 * R;
+            
+            arrow_z = [ 0; 0 ];
+            Ar1b = [ Ar1 arrow_z ];
+            
+            % In main referential.
+            Ar2 = Ar1b * v';
+            
+            % Compute angle.
+            dx = Ar2( 2, 1 ) - Ar2( 1, 1 );
+            dy = Ar2( 2, 2 ) - Ar2( 1, 2 );
+            sigma = atan( dy / dx );
+        end
         
     end
     
