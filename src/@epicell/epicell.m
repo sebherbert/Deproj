@@ -43,7 +43,7 @@ classdef epicell
             % Morphological descriptors on non-downsampled boundary.
             p = epicell.centered_points( boundary );
             obj.euler_angles = epicell.fit_plane( p );
-            obj.ellipse_fit = epicell.fit_ellipse_3d( p, obj.euler_angles );            
+            obj.ellipse_fit = epicell.fit_ellipse_3d( boundary, obj.euler_angles );            
         end
         
         function h = plot_patch_2d( obj, val )
