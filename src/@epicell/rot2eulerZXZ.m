@@ -1,4 +1,4 @@
-function[E,E_deg]=rot2eulerZXZ(R)
+function[ E, E_deg ] = rot2eulerZXZ( R )
 %ROT2EULERZXZ Convert rotation matrix to ZX'Z' Euler angles.
 
     r13 = R( 1, 3 );

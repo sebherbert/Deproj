@@ -75,7 +75,7 @@ classdef epicell
         end
     end
     
-    %% Static methods: compute final properties value.
+    %% Private static methods: compute final properties value.
     methods ( Access = private, Hidden = true, Static = true )
         
         function p = centered_points( p )
@@ -142,8 +142,34 @@ classdef epicell
             p = p - repmat( c, size( p, 1 ), 1 );
             % Fit a plane to these points.
             [ ~, ~, v ] = svd( p );
-            E = rot2eulerZXZ( v );
+            E = epicell.rot2eulerZXZ( v );
         end
+        
+       
+        
+    end
+    
+    %% Public static methods: utilities.
+    
+    methods ( Access = public, Hidden = false, Static = true )
+        % Convert euler angles to rotation matrix.
+        R = euleurZXZ2rot( E )
+        
+        % Convert rotation matrix to euler angles.
+        [ E, E_deg ] = rot2eulerZXZ( R )
+        
+        % Fit a 2D ellipse to a set of 2D points.
+        [ f, Q ] = fit_ellipse_2d( p, method )
+        
+        % Fit a 2D ellipse to a set of 3D points.
+        [ f3d, v ] = fit_ellipse_3d( p, E, method )
+        
+        % Plot a 2D ellipse in 3D.
+        h = plot_ellipse_3d( f3d, v, npoints )
+        
+        % Plot an ellipse in XY plane.
+        h = plot_ellipse_2d( f, npoints )
+        
     end
 end
 
