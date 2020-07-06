@@ -146,7 +146,7 @@ function obj = from_heightmap( ...
         epicells( i ) = epicell( o.boundary, o.junctions, i  );
     end
     
-    obj = deproj( epicells, units );
+    obj = deproj( epicells, junction_graph, units );
     
     fprintf('Done in %.1f seconds.\n', toc )
     

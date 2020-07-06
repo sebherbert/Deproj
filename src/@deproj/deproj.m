@@ -3,12 +3,14 @@ classdef deproj
     
     properties
         epicells
+        junction_graph
         units
     end
     
     methods
-        function obj = deproj( epicells, units )
+        function obj = deproj( epicells, junction_graph, units )
             obj.epicells = epicells;
+            obj.junction_graph = junction_graph;
             obj.units = units;
         end
     end
