@@ -1,28 +1,14 @@
-function h = plot_ellipse_2d( f, npoints)
-%PLOT_ELLIPSE_2D Plot an ellipse in XY plane.
+function h = plot_ellipse_2d( obj, npoints, ax )
+%PLOT_ELLIPSE_2D Plot the ellipse projected on the XY plane.
 
-    if nargin < 2
-        npoints = 20;
-    end
+    p = get_ellipse_points( obj, npoints );
     
-    x0      = f(1);
-    y0      = f(2);
-    a       = f(3);
-    b       = f(4);
-    theta   = f(5);
-
-    R = [   cos( theta ) sin( theta ) ;
-        -sin( theta ) cos( theta ) ] ;
+    xb = p( :, 1 );
+    yb = p( :, 2 );
     
-    t = linspace( 0 , 2 * pi, npoints )';
-    XY0 = [ a * sin(t), b * cos(t) ];
-    XY1 = XY0 * R;
-    xr = XY1( :, 1 ) + x0;
-    yr = XY1( :, 2 ) + y0;
-    
-    xr = [ xr ; xr(1,:) ];
-    yr = [ yr ; yr(1,:) ];
-    h = line( xr, yr );
+    xb = [ xb ; xb(1,:) ];
+    yb = [ yb ; yb(1,:) ];
+    h = line( ax, xb, yb );
 
 end
 

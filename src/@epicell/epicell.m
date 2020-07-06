@@ -84,6 +84,16 @@ classdef epicell
                 'LineWidth', 1, ...
                 'Marker', '.' );
         end
+                
+        % Plot a 2D ellipse in 3D.
+        h = plot_ellipse_3d( obj, npoints, ax )
+                
+        % Plot an ellipse in XY plane.
+        h = plot_ellipse_2d( obj, npoints, ax )
+        
+        % Generate 3D points on the ellipse fit.
+        p = get_ellipse_points( obj, npoints )
+
     end
     
     %% Private static methods: compute final properties value.
@@ -202,12 +212,6 @@ classdef epicell
         
         % Fit a 2D ellipse to a set of 3D points.
         [ f3d, v ] = fit_ellipse_3d( p, E, method )
-        
-        % Plot a 2D ellipse in 3D.
-        h = plot_ellipse_3d( f3d, v, npoints )
-        
-        % Plot an ellipse in XY plane.
-        h = plot_ellipse_2d( f, npoints )
         
     end
 end
