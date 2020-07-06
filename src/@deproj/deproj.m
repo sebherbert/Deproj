@@ -46,6 +46,10 @@ classdef deproj
         
         % Plots the boundaries as patches, colored by the specified values.
         hts = add_plot_variable( obj, values, ax )
+        
+        %Plots the ellipses, colored by the specified values.
+        hts = add_ellipse_variable( obj, values, ax )
+
     end
     
      %% Public static methods: builders.
