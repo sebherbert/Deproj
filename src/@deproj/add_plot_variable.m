@@ -1,7 +1,9 @@
-function hts = add_plot_variable( ax, boundaries, values )
+function hts = add_plot_variable( obj, values, ax )
 %ADD_PLOT_VARIABLE Plots the boundaries as patches, colored by the specified values.
     
-    n_objects = numel( boundaries );
+    epicells = obj.epicells;
+    boundaries = { epicells.boundary };
+    n_objects = numel( boundaries );    
     hts = NaN( n_objects, 1 );
     
     for i = 1 :  n_objects

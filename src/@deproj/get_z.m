@@ -1,5 +1,5 @@
 function z_coords = get_z( P, H, pixel_size, voxel_depth )
-%GET_Z Returns the Z position of points taken from a height-map
+%GET_Z Returns the Z position of points taken from a height-map.
 %   - P is a Nx2 list of points, in physical coordinates.
 %   - H is the height map, encoding the z plane of interest for all X & Y.
 %   - pixel_size: convert pixel coordinates to physical coordinates.

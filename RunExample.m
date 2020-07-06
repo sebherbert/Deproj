@@ -31,129 +31,45 @@ heightmap_filename   = 'HeightMap-2.tif';
 % Physical size of a pixel in X and Y. This will be used to report sizes in
 % µm.
 pixel_size = 0.183; % µm
+units = 'µm';
 
 % Z spacing.
 % How many µm bewtween each Z-slices. We need this to convert the
 % height-map values, that stores the plane of interest, into µm.
 voxel_depth = 1.; % µm
 
+
 % Try to remove objects that have a Z position equal to 0. Normally this
 % value reports objects that are out of the region-of-interest.
 prune_zeros = true;
+inpaint_zeros = true;
 
-%% Read a mask file and convert it to objects.
+% Invert z for plotting.
+invert_z = true;
+
+%% Read files.
 
 % ImageJ mask.
 fprintf('Opening mask image: %s\n', mask_filename )
 I = imread( fullfile( root_folder, mask_filename ) );
 
-% The conversion can take up to 30s for a 1000 x 1000 mask image.
-fprintf('Converting mask to objects.\n' )
-tic 
-% We will downsample later: for now we will need all the pixels to have a
-% robust estimate of the ellipse and plane fit.
-downsample = false;
-[ objects, junction_graph ] = mask_to_objects( I, downsample );
-n_objects = numel( objects );
-n_junctions = numel( junction_graph.Nodes );
-fprintf('Converted a %d x %d mask in %.1f seconds. Found %d objects and %d junctions.\n', ...
-    size(I,1), size(I,2), toc, n_objects, n_junctions )
-
-%% Compute some scale of an object radius.
-
-% Median area (pixel units)
-med_area = median(arrayfun( @(s) polyarea( s.boundary(:,1), s.boundary(:,2) ),  ...
-    objects ) ); % pixels^2
-
-object_scale = 2 * sqrt( med_area )/ pi; % pixel units
-
-fprintf('Typical object scale: %.1f pixels or %.2f µm.\n', ...
-    object_scale, object_scale * pixel_size )
-
-
-%% Scale to physical coordinates.
-
-% Scale junction XY coordinates to µm.
-junction_graph.Nodes.Centroid( :, 1:2 ) = junction_graph.Nodes.Centroid( :, 1:2 ) * pixel_size;
-
-% Scale object XY boundary to µm.
-for i = 1 : n_objects
-    objects( i ).boundary   = objects( i ).boundary * pixel_size;
-    objects( i ).center     = objects( i ).center * pixel_size;
-end
-
-%% Load the height-map and add the Z coordinates to objects.
-
 fprintf('Opening height-map image: %s\n', heightmap_filename )
 H = imread( fullfile( root_folder, heightmap_filename ) );
 
-if prune_zeros
-    mask = H == 0;
-    H = regionfill( H, mask );
-    H( H == 0 ) = NaN;
-end
+%% Create deproj instance.
 
-% Smooth the height-map over a scale smaller than a cell.
-H = imgaussfilt( H, object_scale );
-
-% For junction.
-z_junction = get_z( junction_graph.Nodes.Centroid, H, pixel_size, voxel_depth );
-
-% For objects.
-for i = 1 : n_objects
-    z_obj = get_z( objects( i ).boundary, H, pixel_size, voxel_depth );
-    objects( i ).boundary = [ objects( i ).boundary z_obj ];
-    objects( i ).center(3) = mean( z_obj );
-end
-
-%% Possibly remove the junctions and cells found at z = 0.
-
-if prune_zeros
-    
-    bad_junctions = find( z_junction == 0 | isnan( z_junction ) );
-    junction_graph = junction_graph.rmnode( bad_junctions );
-    z_junction( bad_junctions ) = [];
-
-    fprintf( 'Removed %d junctions at Z=0.\n', numel( bad_junctions ) )
-    
-    objects_to_prune = false( n_objects, 1 );
-    for i = 1 : numel( objects )
-        o = objects( i );
-        if any( isnan( o.boundary(:) ) ) || ~isempty( intersect( bad_junctions, o.junctions ) )
-            objects_to_prune( i ) = true;
-        end        
-    end
-    
-    objects( objects_to_prune ) = [];
-    fprintf( 'Removed %d objects touching these junctions.\n', sum( objects_to_prune ) )
-    
-   n_objects = numel( objects );
-   n_junctions = numel( junction_graph.Nodes );
-    
-end
-
-%% Invert Z position for plotting.
-
-max_z = max( z_junction );
-z_junction = max_z -  z_junction;
-junction_graph.Nodes.Centroid = [ junction_graph.Nodes.Centroid z_junction ];
-
-for i = 1 : n_objects
-    objects( i ).boundary( :, 3 ) = max_z - objects( i ).boundary( :, 3 );
-    objects( i ).center( 3 ) = max_z - objects( i ).center( 3 );
-end
-
-%% Create epicell instances.
-
-epicells = repmat( epicell, n_objects, 1 );
-for i = 1 : n_objects    
-    o = objects( i );
-    epicells( i ) = epicell( o.boundary, o.junctions, i  );
-end
+dpr = deproj.from_heightmap( ...
+    I, ...
+    H, ...
+    pixel_size, ...
+    voxel_depth, ...
+    units, ...
+    invert_z, ...    
+    inpaint_zeros, ...
+    prune_zeros );
 
 %% Plot euler angles.
 
 close all
-plot_fit_plane( epicells );
-
+plot_fit_plane( dpr );
 

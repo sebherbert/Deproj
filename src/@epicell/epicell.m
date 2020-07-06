@@ -43,7 +43,7 @@ classdef epicell
             % Morphological descriptors on non-downsampled boundary.
             p = epicell.centered_points( boundary );
             obj.euler_angles = epicell.fit_plane( p );
-            obj.ellipse_fit = fit_ellipse( p, obj.euler_angles );            
+            obj.ellipse_fit = epicell.fit_ellipse_3d( p, obj.euler_angles );            
         end
         
         function h = plot_patch_2d( obj, val )
@@ -149,8 +149,7 @@ classdef epicell
         
     end
     
-    %% Public static methods: utilities.
-    
+    %% Public static methods: utilities.    
     methods ( Access = public, Hidden = false, Static = true )
         % Convert euler angles to rotation matrix.
         R = euleurZXZ2rot( E )

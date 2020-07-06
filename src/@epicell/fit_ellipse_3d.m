@@ -28,7 +28,7 @@ function [ f3d, v ] = fit_ellipse_3d( p, E, method )
     if nargin < 2
         [ ~, ~, v ] = svd( p );
     else
-        v = euleurZXZ2rot( E );
+        v = epicell.euleurZXZ2rot( E );
     end
     
     % Rotate the points into the principal axes frame.

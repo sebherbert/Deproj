@@ -1,5 +1,10 @@
-function [ hf, hc, he ] = plot_fit_ellipse( epicells )
-%PLOT_FIT_ELLIPSE Summary of this function goes here
+function [ hf, hc, he ] = plot_fit_ellipse( obj, scale_bar_length )
+%PLOT_FIT_ELLIPSE Plot the 2D ellipses on the tissue surface.
+
+    epicells = obj.epicells;
+    if nargin < 2
+        scale_bar_length = 10;
+    end
 
     hf = figure( 'Position', [ 1204 20 600 500 ] );
     hold on
@@ -19,7 +24,7 @@ function [ hf, hc, he ] = plot_fit_ellipse( epicells )
     end
 
     set( he, 'Color', 'k' )
-    add_plot_scalebar( gca,  epicells, 10, 'µm' );
+    add_plot_scalebar(  obj, scale_bar_length, gca );
 
 end
 

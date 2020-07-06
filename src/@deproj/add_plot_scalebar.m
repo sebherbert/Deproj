@@ -1,10 +1,13 @@
-function [ hsb, ht ] = add_plot_scalebar( ax, epicells, length, units )
+function [ hsb, ht ] = add_plot_scalebar( obj, length, ax )
 %ADD_PLOT_SCALEBAR Add a scale-bar to the plot.
 %   We used the collection of epicells to determine a sensible position.
 
     POS_RATIO = 0.10; % of width to position the bar
     THICKNESS_RATIO = 0.02;
-
+    
+    epicells = obj.epicells;
+    units = obj.units;
+    
     p = vertcat( epicells.boundary );
     minp = double( min( p ) );
     maxp = double( max( p ) );
