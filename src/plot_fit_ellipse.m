@@ -12,12 +12,13 @@ function [ hf, hc, he ] = plot_fit_ellipse( epicells )
     for i = 1 : n_obj
         
         o = epicells( i );
-        [ f, v  ] = fit_ellipse_3d( double( o.boundary ) );
+        [ f3d, v  ] = fit_ellipse_3d( double( o.boundary ) );
         
         hc( i ) = o.plot_contour_3d;
-        he( i ) =  plot_ellipse_3d( f, v );
+        he( i ) =  plot_ellipse_3d( f3d, v );
     end
 
+    set( he, 'Color', 'k' )
     add_plot_scalebar( gca,  epicells, 10, 'µm' );
 
 end

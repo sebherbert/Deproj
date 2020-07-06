@@ -5,9 +5,6 @@ function [ f, Q ] = fit_ellipse_2d( p, method )
         method = 'direct';
     end
     
-    c = mean( p );
-    p = p - repmat( c, size( p, 1 ), 1 );
-
     switch( lower( method ) )
        
         case 'direct'
@@ -17,9 +14,7 @@ function [ f, Q ] = fit_ellipse_2d( p, method )
     end
     
     f = quadratic_to_cartesian2( Q );
-    f( 1 ) = f( 1 ) + c( 1 );
-    f( 2 ) = f( 2 ) + c( 2 );
-    
+   
     %% Subfunctions
     
     function f = quadratic_to_cartesian2( Q )
