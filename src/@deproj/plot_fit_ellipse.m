@@ -9,11 +9,9 @@ function [ hf, he ] = plot_fit_ellipse( obj, scale_bar_length )
     hold on
     axis equal
     
-    % TODO set colormap, pass it to colorbar and set caxis limits from
-    % values. And does this all automatically.
-
     values = rad2deg( [ obj.epicells.proj_direction ]' );
-    he = add_ellipse_variable( obj, values, gca );
+    cmap = 'hsv';
+    he = add_ellipse_variable( obj, values, cmap, gca );
     add_plot_scalebar(  obj, scale_bar_length, gca );
 
     axis( gca, 'off' )

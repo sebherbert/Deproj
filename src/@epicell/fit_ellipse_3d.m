@@ -38,7 +38,7 @@ function [ f3d, v ] = fit_ellipse_3d( p, E, method )
     
     f( 1 ) = f( 1 ) + c( 1 );
     f( 2 ) = f( 2 ) + c( 2 );
-    f3d = [ f(1:2) c(3) f(3:5) ];
+    f3d = double( [ f(1:2) c(3) f(3:5) ] );
     
 end
 
