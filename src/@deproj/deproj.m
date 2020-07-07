@@ -17,7 +17,12 @@ classdef deproj
     
     %% Plotting routines.
     methods
-       
+        
+        %% Exports.
+        
+        % Export masurements to a table.
+        T = to_table( obj )
+        
         %% Generate figures.
         
         % Figure with the local plan orientation for a collection of epicells.
