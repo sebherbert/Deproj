@@ -82,14 +82,14 @@ function obj = from_heightmap( ...
     end
     
     % Smooth the height-map over a scale smaller than a cell.
-    H = imgaussfilt( H, object_scale );
+    Hs1 = imgaussfilt( H, object_scale );
     
     % For junction.
-    z_junction = deproj.get_z( junction_graph.Nodes.Centroid, H, pixel_size, voxel_depth );
+    z_junction = deproj.get_z( junction_graph.Nodes.Centroid, Hs1, pixel_size, voxel_depth );
     
     % For objects.
     for i = 1 : n_objects
-        z_obj = deproj.get_z( objects( i ).boundary, H, pixel_size, voxel_depth );
+        z_obj = deproj.get_z( objects( i ).boundary, Hs1, pixel_size, voxel_depth );
         objects( i ).boundary = [ objects( i ).boundary z_obj ];
         objects( i ).center(3) = mean( z_obj );
     end
@@ -135,6 +135,33 @@ function obj = from_heightmap( ...
         end
     end
     
+    %% Compute local curvature from the smoothed height-map.
+    % Ref: http://users.vcnet.com/simonp/curvature.pdf
+    
+    fprintf('Compuing tissue local curvature.\n' )
+    
+    % We need to smooth the height-map over the scale of several cells.
+    Hs2 = imgaussfilt( Hs1, 3 * object_scale );
+    
+    if invert_z
+        Hs2 = -Hs2;
+    end
+    
+    [ Hx , Hy  ] = gradient( Hs2 );
+    [ Hxx, Hxy ] = gradient( Hx );
+    [  ~ , Hyy ] = gradient( Hy );
+    % Gaussian curvature.
+    Nk = ( 1. + Hx .^ 2 + Hy .^ 2 );
+    curvGauss = ( Hxx .* Hyy - Hxy .^ 2 ) ./ ( Nk .^ 2 );
+    % Mean curvature.
+    Dk1 = ( 1. + Hx .^ 2 ) .* Hyy;
+    Dk2 = ( 1. + Hy .^ 2 ) .* Hxx;
+    Dk3 = - 2. * Hx .* Hy .* Hxy;
+    curvMean = ( Dk1 + Dk2 + Dk3 ) ./ ( 2 * Nk .^ 1.5 );
+    % Principle curvatures.
+    curvK1 = curvMean + sqrt( curvMean .* curvMean - curvGauss );
+    curvK2 = curvMean - sqrt( curvMean .* curvMean - curvGauss );
+    
     %% Create epicell instances.
     
     fprintf('Computing morphological descriptors of all objects.\n' )
@@ -143,7 +170,14 @@ function obj = from_heightmap( ...
     epicells = repmat( epicell, n_objects, 1 );
     for i = 1 : n_objects
         o = objects( i );
-        epicells( i ) = epicell( o.boundary, o.junctions, i  );
+        
+        % Get center position in pixel again.
+        xc = round( o.center( 1 ) / pixel_size );
+        yc = round( o.center( 2 ) / pixel_size );
+        
+        curvatures = [ curvMean( yc, xc ), curvGauss( yc, xc ), curvK1( yc, xc), curvK2( yc, xc ) ];
+        
+        epicells( i ) = epicell( o.boundary, o.junctions, i, curvatures );
     end
     
     obj = deproj( epicells, junction_graph, units );

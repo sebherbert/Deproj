@@ -9,20 +9,25 @@ classdef epicell
         area
         perimeter
         euler_angles
+        curvatures
         ellipse_fit
         eccentricity
         proj_direction
         uncorrected_area
         uncorrected_perimeter
-        id
+        id        
     end
     
     methods
-        function obj = epicell( boundary, junction_ids, id )
-            %EPICELL Construct an epicell from a N x 3 list of points.
+        
+        function obj = epicell( boundary, junction_ids, id , curvatures )
+        %EPICELL Construct an epicell from a N x 3 list of points.
             
             if nargin == 0
                 return
+            end
+            if nargin >= 4
+                obj.curvatures = curvatures;
             end
             
             % Reduce polygon in 2D then put back Z. Takes time.

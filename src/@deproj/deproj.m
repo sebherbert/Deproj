@@ -31,6 +31,9 @@ classdef deproj
         % Plot the 2D ellipses on the tissue surface.
         [ hf, hc, he ] = plot_fit_ellipse( obj, scale_bar_length )
         
+        % Figure with the local curvaure for a collection of epicells.
+        [ hf, ax1, ax2, ax3 ] = plot_curvatures( obj, scale_bar_length )
+        
         %% Helpers.
         % They are public in case of.
         
@@ -54,7 +57,19 @@ classdef deproj
         
         %Plots the ellipses, colored by the specified values.
         hts = add_ellipse_variable( obj, values, cmap, ax )
-
+        
+        % Add the tissue plot colored with the mean curvature.
+        hts = add_plot_curvature_mean( obj, ax )
+        
+        % Add the tissue plot colored with the Gaussian curvature.
+        hts = add_plot_curvature_gauss( obj, ax )
+        
+        % Add the tissue plot colored with the first principal curvature.
+        hts = add_plot_curvature_k1( obj, ax )
+        
+        % Add the tissue plot colored with the second principal curvature.
+        hts = add_plot_curvature_k2( obj, ax )
+                
     end
     
      %% Public static methods: builders.
