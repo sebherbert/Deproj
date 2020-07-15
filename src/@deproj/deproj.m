@@ -72,7 +72,7 @@ classdef deproj
                 
     end
     
-     %% Public static methods: builders.
+     %% Public static methods: builders & util.
     methods ( Access = public, Hidden = false, Static = true )
         
         % Returns the Z position of points taken from a height-map.
@@ -84,6 +84,9 @@ classdef deproj
             invert_z, ...
             inpaint_zeros, ...
             prune_zeros );
+        
+        % Returns the seismic colormap.
+        cmap = cmap_seismic();
     end
     
     %% Private static methods: utilities.

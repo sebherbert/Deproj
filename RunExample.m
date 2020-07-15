@@ -68,8 +68,11 @@ dpr = deproj.from_heightmap( ...
     inpaint_zeros, ...
     prune_zeros );
 
-%% Plot euler angles.
+%% Plot morphological parameters.
 
 close all
-plot_fit_plane( dpr );
+% plot_fit_plane( dpr );
+% plot_fit_ellipse( dpr );
+[ hf, ax1, ax2, ax3 ] = plot_curvatures( dpr );
+
 
