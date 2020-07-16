@@ -37,6 +37,9 @@ classdef deproj
         % Figure with the cells area and perimeter.
         [ hf, ax1, ax2 ] = plot_sizes( obj, scale_bar_length )
         
+        % Figure with the error on uncorrected cells area and perimeter.
+        [ hf, ax1, ax2 ] = plot_distorsions( obj, scale_bar_length )
+        
         %% Helpers.
         % They are public in case of.
         
@@ -78,6 +81,12 @@ classdef deproj
         
         % Add the tissue plot colored with the cell perimeter.
         hts = add_plot_perimeter( obj, ax )
+        
+        % Add the tissue plot colored with the error on cell area caused by the projection.
+        hts = add_plot_distorsion_area( obj, ax )
+        
+        % Add the tissue plot colored with the error on cell perimeter caused by the projection.
+        hts = add_plot_distorsion_perimeter( obj, ax )
                 
     end
     
