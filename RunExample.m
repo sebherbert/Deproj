@@ -72,8 +72,7 @@ dpr = deproj.from_heightmap( ...
 
 close all
 plot_sizes( dpr );
-% plot_fit_plane( dpr );
-% plot_fit_ellipse( dpr );
-% plot_curvatures( dpr );
-
-
+plot_fit_plane( dpr );
+plot_fit_ellipse( dpr );
+plot_curvatures( dpr );
+plot_distorsions( dpr );
