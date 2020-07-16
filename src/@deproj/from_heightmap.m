@@ -139,28 +139,12 @@ function obj = from_heightmap( ...
     % Ref: http://users.vcnet.com/simonp/curvature.pdf
     
     fprintf('Compuing tissue local curvature.\n' )
-    
-    % We need to smooth the height-map over the scale of several cells.
-    Hs2 = imgaussfilt( Hs1, 3 * object_scale );
-    
-    if invert_z
-        Hs2 = -Hs2;
-    end
-    
-    [ Hx , Hy  ] = gradient( Hs2 );
-    [ Hxx, Hxy ] = gradient( Hx );
-    [  ~ , Hyy ] = gradient( Hy );
-    % Gaussian curvature.
-    Nk = ( 1. + Hx .^ 2 + Hy .^ 2 );
-    curvGauss = ( Hxx .* Hyy - Hxy .^ 2 ) ./ ( Nk .^ 2 );
-    % Mean curvature.
-    Dk1 = ( 1. + Hx .^ 2 ) .* Hyy;
-    Dk2 = ( 1. + Hy .^ 2 ) .* Hxx;
-    Dk3 = - 2. * Hx .* Hy .* Hxy;
-    curvMean = ( Dk1 + Dk2 + Dk3 ) ./ ( 2 * Nk .^ 1.5 );
-    % Principle curvatures.
-    curvK1 = curvMean + sqrt( curvMean .* curvMean - curvGauss );
-    curvK2 = curvMean - sqrt( curvMean .* curvMean - curvGauss );
+    [ curvMean, curvGauss, curvK1, curvK2 ] = deproj.compute_curvatures( ...
+        Hs1, ...
+        object_scale, ...
+        pixel_size, ...
+        voxel_depth, ...
+        invert_z );
     
     %% Create epicell instances.
     

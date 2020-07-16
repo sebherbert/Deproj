@@ -43,7 +43,8 @@ function [ hf, ax1, ax2, ax3 ] = plot_curvatures( obj, scale_bar_length )
     colormap( ax1, cmap )
     colormap( ax2, cmap )
     colormap( ax3, cmap )
-    colorbar(ax3, 'Location', 'EastOutside' )
+    c = colorbar(ax3, 'Location', 'EastOutside' );
+    c.Label.String = sprintf('Curvature (1/%s)', obj.units );
     
     add_plot_scalebar( obj, scale_bar_length, ax3 );
     

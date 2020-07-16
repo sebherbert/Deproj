@@ -87,6 +87,10 @@ classdef deproj
         
         % Returns the seismic colormap.
         cmap = cmap_seismic();
+        
+        % Compute local curvature from the smoothed height-map.
+        [ curvMean, curvGauss, curvK1, curvK2 ] = compute_curvatures( H, object_scale, pixel_size, voxel_depth, invert_z )
+
     end
     
     %% Private static methods: utilities.
