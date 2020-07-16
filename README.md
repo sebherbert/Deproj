@@ -2,23 +2,29 @@
 
 DeProj is a MATLAB app made to yield accurate morphological measurements on cells in epithelia or tissues.
 
-## Measuring cell morphologies on 2D projections.
+## What is DeProj useful for?
 
-Epithelia are a continuous layer of cells on a typically non-flat, smooth surface. A simple approach to their visualization and analysis is to perform a projection of the signal on the tissue surface on a 2D plane. When cells are labelled for their membrane (cadherin, *etc*), a projection image resembles the following:
+### Measuring cell morphologies on 2D projections.
 
-![Example epithelium projection](static/Projection-2.png)
+Epithelia are a continuous layer of cells on a typically non-flat, smooth surface. A simple approach to their visualization and analysis is to perform a projection of the signal on the tissue surface on a 2D plane (think of MIP). An epithelium with cells labeled for E-cadherin resembles this (top panel, figure below):
 
- There are several commercial and academic open-source software tools that can segment the cell boundaries imaged on this projection, yielding for instance a black and white mask such as this one:
+<img src="static/IllustrateDeProj_02.png" alt="drawing" width="500"/>
 
-![Example resulting segmentation](static/Segmentation-2.png)
+There are several commercial and academic open-source software tools that can segment the cell boundaries imaged on this projection, yielding for instance the black and white mask in the middle panel above. (We list some of them in the last section.)
 
-Several of these open-source tools offer an intuitive user interface, allowing for immediate usage and user interaction. For instance:
+Finally, the segmentation is used to make morphological measurements (area, elongation, orientation…). For instance the bottom panel above reports the cell apical area. The color encodes the cell area from 2 µm² (blue) to 60 µm² (yellow).
 
-- [EpiTools](https://github.com/epitools) is a toolbox with MATLAB and [Icy](http://icy.bioimageanalysis.org/) components built to study the dynamics of drosophila imaginal discs. Its segmentation algorithm relies on region growing from seeds determined automatically and merged based on region areas. 
-- [SEGGA](https://github.com/ZallenLab/SEGGA) is standalone applications written with MATLAB proposed for the investigation of drosophila embryo germband epithelium.
-- TissueAnalyzer is a tissue segmentation tool, distributed along [TissueMiner](https://github.com/mpicbg-scicomp/tissue_miner). 
+### Projection artefacts.
 
-But these tools operate on 2D images and suppose that the epithelium is flat and parallel to the XY plane. When this is not the case, any **morphological measurements made on the segmentation results will be corrupted by geometrical distortions induced by the projection**. Indeed, almost all morphology metrics, such as area, circularity, polarity and orientation will be erroneous when they are measured on the 2D projection. DeProj is a MATLAB tool that takes segmentation results generated on the 2D projection and uses the height-map to correct morphology measurements made on the 2D projection. Deproj returns corrected metrics, as if they were measured from a segmentation results on the reference surface in the original 3D image.
+Most of the time, the morphological measurements are made directly on the 2D segmentation. This is fine as long as the tissue is mostly parallel to the XY plane, on which its 3D volume was projected. 
+
+When this is not the case, any **morphological measurements made on the segmentation results will be corrupted by geometrical distortions induced by the projection**. Indeed, almost all morphology metrics, such as area, circularity, polarity and orientation will be erroneous when they are measured on the 2D projection. This is illustrated on the figure below:
+
+![ProjectionArtifact](/Users/tinevez/Development/Matlab/DeProj/static/IllustrateDeProj_01.png)
+
+On this illustration, a cell (in red, top-left quadrant) is located on a region of the tissue that makes a large angle with the XY plane. Its projection on the XY plane (in green, bottom-left quadrant) therefore underestimates its size, and alters its orientation. This is recapitulated on the top-right and bottom-right quadrants, with a side view.
+
+**DeProj** is a tool made to correct for this distorsion. It takes 1) the results of the segmentation on the projection - the green contour on the bottom-right quadrant above - 2) the height-map that follows the shape of the tissue - the gray smooth line on the top-right quadrant above - and "de-project" the cell back on its original position in the tissue - in red, top-right quadrant. Then it yields corrected morphological measurements.
 
 ## How-to use DeProj.
 
@@ -27,14 +33,112 @@ DeProj requires two inputs:
 - the reference surface for the projected tissue, 
 - and a black-and-white cell-contour image resulting from a segmentation algorithm that ran on the projection. 
 
-From them, it computes accurate metrics on the morphology of cells, as if they were measured on the not on the 2D projection, but on the curved tissue itself. A simple GUI allows entering the two inputs. The reference surface can be entered either as the height-map generated by LocalZProjector (or another tool), or as a 3D mesh to accommodate a wide range of outputs from preprocessing tools. When the first input is in the shape of a height-map, it is converted to a 3D mesh for the reference surface. The cell-contour image is internally converted to a collection of individual cell polygons. The tool then maps each node of a cell polygon onto the reference surface 3D mesh, effectively "Deprojecting" the cell contour on the tissue surface. Some morphological metrics (area, perimeter, sphericity, ... ) are then computed and saved, along with the cell contour mapped on the tissue surface. Deproj also displays several visualisation of the corrected biological object.
+From them, it computes accurate metrics on the morphology of cells, as if they were measured on the not on the 2D projection, but on the curved tissue itself. A simple GUI allows entering the two inputs. The reference surface can be entered either as the height-map generated by [LocalZProjector](https://gitlab.pasteur.fr/iah-public/localzprojector) (or another tool), or as a 3D mesh to accommodate a wide range of outputs from preprocessing tools.
 
+The cell-contour image is internally converted to a collection of individual polygons. The tool then maps each node of a cell polygon onto the reference surface, effectively "deprojecting" the cell contour on the tissue surface. Several morphological metrics (area, perimeter, sphericity... ) are then computed and saved, along with the cell contour mapped on the tissue surface. DeProj also has utilities and tools to display and export analysis results.
 
+### Requirements.
 
-## Requirements.
+We use builtin functions introduced in MATLAB R2019b. So you need at least this version.
 
-We use builtin functions introduced in MATLAB R2019b. 
-So you need at least this version.
+### Installation.
+
+The simplest way to get DeProj is to use `git` to clone this repository directly.
+
+```sh
+git clone git@github.com:sebherbert/Deproj.git
+```
+
+If you do not have `git` on your system, or don't want to use it, download [the zip of the repository](https://github.com/sebherbert/Deproj/archive/rework-pub.zip).
+
+Then you want to add DeProj to your MATLAB path. To do so, simply add the `src` folder to the MATLAB path, but do not add its subfolders. It contains only two MATLAB classes: `@epicell` (that stores the data for a single deprojected cell) and `@deproj` that is used to create and manage a collection of `@epicell`s. 
+
+[This page](https://mathworks.com/help/matlab/ref/pathtool.html) explains how to add a folder to the MATLAB path. 
+
+Again, it's important that you add the `src` folder to the path, but not its subfolders because they contain the DeProj classes methods. Details about MATLAB classes and path can be found [here](https://fr.mathworks.com/help/matlab/matlab_oop/organizing-classes-in-folders.html). 
+
+To verify that this worked, just type:
+
+```matlab
+>> epicell
+```
+
+in the MATLAB prompt. You should see the following:
+
+```matlab
+ans = 
+
+  epicell with properties:
+
+                 boundary: []
+                   center: []
+             junction_ids: []
+                     area: []
+                perimeter: []
+             euler_angles: []
+               curvatures: []
+              ellipse_fit: []
+             eccentricity: []
+           proj_direction: []
+         uncorrected_area: []
+    uncorrected_perimeter: []
+                       id: []
+```
+
+### Example analysis.
+
+The root folder of the DeProj repository has a [self-contained example](RunExample.m), that you can run with:
+
+```matlab
+>> RunExample
+```
+
+It will used small crop of images stored in the `samples` folder. After some time you should see the following:
+
+```
+Opening mask image: Segmentation-2.tif
+Opening height-map image: HeightMap-2.tif
+Converting mask to objects.
+Converted a 282 x 508 mask in 1.3 seconds. Found 426 objects and 1840 junctions.
+Typical object scale: 10.1 pixels or 1.84 µm.
+Collecting Z coordinates.
+Done in 0.1 seconds.
+Removed 0 junctions at Z=0.
+Removed 0 objects touching these junctions.
+Computing tissue local curvature.
+Computing morphological descriptors of all objects.
+Done in 3.5 seconds.
+```
+
+and several figures resulting from the analysis:
+
+![ExampleResults_fig1a_CellSize](static/ExampleResults_fig1a_CellSize.png)
+
+The plots are 3D plots of cells on the initial tissue surface. In this example, the maximal slope is modest (<20º) so the side views appear rather flat.
+
+![ExampleResults_fig1a_CellSize](static/ExampleResults_fig1b_CellSize.png)
+
+DeProj computes the orientation of the local plane parallel to the cell apical surface. This the plane closest to the 3D points of the cell contour. Its orientation is reported as the 3 Euler angles, following the [ZX'Z'' convention](https://en.wikipedia.org/wiki/Euler_angles#Chained_rotations_equivalence). These 3 angles are displayed in the Figure 2 below.
+
+- The first one, `alpha` is the orientation of the cell plane (top panel below). As an analogy, imaging you are facing a hill, the slope going up. The direction (south, west…) in which the slope is the largest is given by the angle `alpha`. On these figures we wrap the angle between 0º and 180º to and because of MATLAB convention, this angle is measured counterclockwise from the Y axis (so 90º corresponds to a slope going up in the east-west direction).
+- The second one, `beta` measures the slope of this plane with XY plane (middle panel). A value of 0º indicates that the cell plane is parallel to XY. 
+- The third one , `gamma` measures the cell main orientation in the cell plane (bottom panel). Because the cell plane was rotated a first time by `alpha`, this angle does not give a result immediately usable. 
+
+![ExampleResults_fig2_EulerAngles](static/ExampleResults_fig2_EulerAngles.png)
+
+We project the cell contour on this inclined plane, and we fit the projected contour by a 2D ellipse. The ellipses are not parallel to the XY plane (they are in the cell plane) and they allow the computation of the cell main orientation (Figure 3 below) and its eccentricity or elongation.
+
+![ExampleResults_fig3_EllipseFit](static/ExampleResults_fig3_EllipseFit.png)
+
+Because we have access the Z-position of each location thanks to the height-map, we cam compute the [local curvature](https://en.wikipedia.org/wiki/Curvature#Curves_on_surfaces) of the tissue just at a cell position. This measure a form of 'stretch' on the cell. DeProj reports the Gaussian curvature, the mean curvature and the principal curvatures (Figure 4 below).
+
+![ExampleResults_fig4_LocalCurvature](static/ExampleResults_fig4_LocalCurvature.png)
+
+We can also measure the cell size (area and perimeter) on the XY projection, and compare the values to the real, deprojected area and perimeter. This gives an idea of the error caused b the projection distorsion. As expected, the error caused by the projection distorsion (Figure 5 below) is larger in areas where the local angle with the XY plane is the largest (middle panel in Figure 2 above). Again, on this example tissue, the slope is rather small so we have only a small error.
+
+![ExampleResults_fig5_Distorsion](static/ExampleResults_fig5_Distorsion.png)
+
+## Documentation.
 
 ## Launch the program
 The method can both be called in a GUI and by the command line of MATLAB
@@ -46,3 +150,11 @@ The method can both be called in a GUI and by the command line of MATLAB
 
  * In case all arguments are provided, the method will continue with the desired inputs
  * In case no arguments are provided, the method will revert to default parameters and only ask the user for inputs and output paths.
+
+## Side note: Segmenting the projection.
+
+Several open-source tools can segment the projection and yield the cells contour or the mask displayed above. Some of them offer an intuitive user interface, allowing for immediate usage and user interaction. For instance:
+
+- [EpiTools](https://github.com/epitools) is a toolbox with MATLAB and [Icy](http://icy.bioimageanalysis.org/) components built to study the dynamics of drosophila imaginal discs. Its segmentation algorithm relies on region growing from seeds determined automatically and merged based on region areas. 
+- [SEGGA](https://github.com/ZallenLab/SEGGA) is standalone applications written with MATLAB proposed for the investigation of drosophila embryo germband epithelium.
+- TissueAnalyzer is a tissue segmentation tool, distributed along [TissueMiner](https://github.com/mpicbg-scicomp/tissue_miner). 
