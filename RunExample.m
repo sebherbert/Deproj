@@ -71,8 +71,9 @@ dpr = deproj.from_heightmap( ...
 %% Plot morphological parameters.
 
 close all
+plot_sizes( dpr );
 % plot_fit_plane( dpr );
 % plot_fit_ellipse( dpr );
-[ hf, ax1, ax2, ax3 ] = plot_curvatures( dpr );
+% plot_curvatures( dpr );
 
 

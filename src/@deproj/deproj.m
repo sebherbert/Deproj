@@ -34,6 +34,9 @@ classdef deproj
         % Figure with the local curvaure for a collection of epicells.
         [ hf, ax1, ax2, ax3 ] = plot_curvatures( obj, scale_bar_length )
         
+        % Figure with the cells area and perimeter.
+        [ hf, ax1, ax2 ] = plot_sizes( obj, scale_bar_length )
+        
         %% Helpers.
         % They are public in case of.
         
@@ -69,6 +72,12 @@ classdef deproj
         
         % Add the tissue plot colored with the second principal curvature.
         hts = add_plot_curvature_k2( obj, ax )
+        
+        % Add the tissue plot colored with the cell area.
+        hts = add_plot_area( obj, ax )
+        
+        % Add the tissue plot colored with the cell perimeter.
+        hts = add_plot_perimeter( obj, ax )
                 
     end
     
