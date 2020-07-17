@@ -98,7 +98,7 @@ function T = to_table( obj )
             obj.units
             obj.units
             obj.units
-            sprintf( '%s^2', obj.units )
+            sprintf( '%s²', obj.units )
             obj.units
             'radians'
             'radians'
@@ -112,10 +112,10 @@ function T = to_table( obj )
             ''
             'radians'
             sprintf( '1/%s', obj.units )
-            sprintf( '1/%s^2', obj.units )
+            sprintf( '1/%s²', obj.units )
             sprintf( '1/%s', obj.units )
             sprintf( '1/%s', obj.units )
-            sprintf( '%s^2', obj.units )
+            sprintf( '%s²', obj.units )
             obj.units
             };
 
