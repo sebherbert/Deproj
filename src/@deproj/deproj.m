@@ -23,6 +23,9 @@ classdef deproj
         % Export masurements to a table.
         T = to_table( obj )
         
+        % Exports results to a spreadsheet file.
+        to_file( obj, file_name, include_header )
+        
         %% Generate figures.
         
         % Figure with the local plan orientation for a collection of epicells.
