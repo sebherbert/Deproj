@@ -13,7 +13,7 @@ function T = to_table( obj )
     
     area            = vertcat( epicells.area );
     
-    perim           = vertcat( epicells.perimeter );
+    perimeter       = vertcat( epicells.perimeter );
     
     euler_angle     = vertcat( epicells.euler_angles );
     euler_alpha     = euler_angle( : , 1 );
@@ -32,6 +32,12 @@ function T = to_table( obj )
     
     proj_direction  = vertcat( epicells.proj_direction );
     
+    curvatures      = vertcat( epicells.curvatures );
+    curvature_mean  = curvatures( : , 1 );
+    curvature_gauss = curvatures( : , 2 );
+    curvature_k1    = curvatures( : , 3 );
+    curvature_k2    = curvatures( : , 4 );
+    
     uncorrected_area  = vertcat( epicells.uncorrected_area );
     
     uncorrected_perimeter  = vertcat( epicells.uncorrected_perimeter );
@@ -42,7 +48,7 @@ function T = to_table( obj )
         yc, ...
         zc, ...
         area, ...
-        perim, ...
+        perimeter, ...
         euler_alpha, ...
         euler_beta, ...
         euler_gamma, ...
@@ -54,8 +60,12 @@ function T = to_table( obj )
         ellipse_sigma, ...
         eccentricity, ...
         proj_direction, ...
+        curvature_mean, ...
+        curvature_gauss, ...
+        curvature_k1, ...
+        curvature_k2, ...
         uncorrected_area, ...
-        uncorrected_perimeter);
+        uncorrected_perimeter );
     
     T.Properties.VariableDescriptions = {
             'Unique identifier'
@@ -75,6 +85,10 @@ function T = to_table( obj )
             'Ellipse fit angle with X'' (see Euler angles) axis'
             'Eccentricity from ellipse fit'
             'Cell main direction projected on the XY plane'
+            'Local mean curvature'
+            'Local Gaussian curvature'
+            'First principal curvature'
+            'Second principal curvature'
             'Cell area projected on the XY plane'
             'Cell perimeter projected on the XY plane'
         };
@@ -97,11 +111,15 @@ function T = to_table( obj )
             'radians'
             ''
             'radians'
+            sprintf( '1/%s', obj.units )
+            sprintf( '1/%s^2', obj.units )
+            sprintf( '1/%s', obj.units )
+            sprintf( '1/%s', obj.units )
             sprintf( '%s^2', obj.units )
             obj.units
             };
 
-        T.Properties.Description = sprintf( 'Data generated from Deproj software, exported on %s.', ...
+        T.Properties.Description = sprintf( 'Data generated from DeProj software, exported on %s.', ...
             datestr( now ) );
 
     end
