@@ -22,7 +22,7 @@ Most of the time, the morphological measurements are made directly on the 2D seg
 
 When this is not the case, any **morphological measurements made on the segmentation results will be corrupted by geometrical distortions induced by the projection**. Indeed, almost all morphology metrics, such as area, circularity, polarity and orientation will be erroneous when they are measured on the 2D projection. This is illustrated on the figure below:
 
-![ProjectionArtifact](/Users/tinevez/Development/Matlab/DeProj/static/IllustrateDeProj_01.png)
+![ProjectionArtifact](static/IllustrateDeProj_01.png)
 
 On this illustration, a cell (in red, top-left quadrant) is located on a region of the tissue that makes a large angle with the XY plane. Its projection on the XY plane (in green, bottom-left quadrant) therefore underestimates its size, and alters its orientation. This is recapitulated on the top-right and bottom-right quadrants, with a side view.
 
@@ -154,17 +154,17 @@ It is the results of the segmentation step, and must be a black and white image 
 
 For instance, this is good (the ridges can be connected by the pixel diagonals):
 
-![8-connectivity](/Users/tinevez/Development/Matlab/DeProj/static/8-connectivity.png)
+![8-connectivity](static/8-connectivity.png)
 
 The following is <u>not good</u> (the ridges only move east west north and south):
 
-![4-connectivity](/Users/tinevez/Development/Matlab/DeProj/static/4-connectivity.png)
+![4-connectivity](static/4-connectivity.png)
 
 #### The height-map.
 
 The height-map is an image <u>of the exact same size that the segmentation image</u>, and for which the pixel value reports the Z position of the tissue surface. For instance:
 
-![HeightMap-2](/Users/tinevez/Development/Matlab/DeProj/static/HeightMap-2.png)
+![HeightMap-2](static/HeightMap-2.png)
 
 On this example the pixel value is an integer that gives the Z-plane from which the projection pixel was taken. Several academic softwares generate this height-map (under varying names) on top of the projection. We list some of them at the end of this documentation.
 
@@ -318,7 +318,7 @@ dpr.to_file( 'table.csv' )
 dpr.to_file( 'table.xlsx' )
 ```
 
-![ExampleExport](/Users/tinevez/Development/Matlab/DeProj/static/ExampleExport.png)
+![ExampleExport](static/ExampleExport.png)
 
 It can also be used to generate customisable plots. Several convenience methods are there:
 
@@ -326,7 +326,7 @@ It can also be used to generate customisable plots. Several convenience methods 
 >> dpr.plot_sizes
 ```
 
-![ExampleResults_fig1a_CellSize](/Users/tinevez/Development/Matlab/DeProj/static/ExampleResults_fig1a_CellSize.png)
+![ExampleResults_fig1a_CellSize](static/ExampleResults_fig1a_CellSize.png)
 
 ## Appendix.
 
