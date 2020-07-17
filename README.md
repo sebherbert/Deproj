@@ -2,7 +2,9 @@
 
 DeProj is a MATLAB app made to yield accurate morphological measurements on cells in epithelia or tissues.
 
-## What is DeProj useful for?
+[TOC]
+
+## What is DeProj useful for.
 
 ### Measuring cell morphologies on 2D projections.
 
@@ -26,7 +28,7 @@ On this illustration, a cell (in red, top-left quadrant) is located on a region 
 
 **DeProj** is a tool made to correct for this distorsion. It takes 1) the results of the segmentation on the projection - the green contour on the bottom-right quadrant above - 2) the height-map that follows the shape of the tissue - the gray smooth line on the top-right quadrant above - and "de-project" the cell back on its original position in the tissue - in red, top-right quadrant. Then it yields corrected morphological measurements.
 
-## How-to use DeProj.
+## How to use DeProj.
 
 DeProj requires two inputs: 
 
@@ -85,7 +87,7 @@ ans =
                        id: []
 ```
 
-### Example analysis.
+### Running the example.
 
 The root folder of the DeProj repository has a [self-contained example](RunExample.m), that you can run with:
 
@@ -138,20 +140,208 @@ We can also measure the cell size (area and perimeter) on the XY projection, and
 
 ![ExampleResults_fig5_Distorsion](static/ExampleResults_fig5_Distorsion.png)
 
-## Documentation.
+## Running DeProj from MATLAB prompt.
 
-## Launch the program
-The method can both be called in a GUI and by the command line of MATLAB
-1. To call the method using the GUI:
+DeProj is mainly made of two classes, and running it from the MATLAB prompt should be convenient enough.
 
- start the DeProj_GUI app in MATLAB `>> DeProj_GUI`. The GUI will guide you to provide the proper inputs and outputs to the method as well as the method parameters. The app has been created under MATLAB R2017b version and using an older version may create unexpected behavior.
+### From a segmentation mask and a height-map.
 
-2. To call the method using the command line: enter `>> surface3D_combine()`
+You need two images as input.
 
- * In case all arguments are provided, the method will continue with the desired inputs
- * In case no arguments are provided, the method will revert to default parameters and only ask the user for inputs and output paths.
+#### The segmentation mask. 
 
-## Side note: Segmenting the projection.
+It is the results of the segmentation step, and must be a black and white image where each object is white and separated from its neighbor by a black ridge. Importantly the ridge must be connected using 8-connectivity. 
+
+For instance, this is good (the ridges can be connected by the pixel diagonals):
+
+![8-connectivity](/Users/tinevez/Development/Matlab/DeProj/static/8-connectivity.png)
+
+The following is <u>not good</u> (the ridges only move east west north and south):
+
+![4-connectivity](/Users/tinevez/Development/Matlab/DeProj/static/4-connectivity.png)
+
+#### The height-map.
+
+The height-map is an image <u>of the exact same size that the segmentation image</u>, and for which the pixel value reports the Z position of the tissue surface. For instance:
+
+![HeightMap-2](/Users/tinevez/Development/Matlab/DeProj/static/HeightMap-2.png)
+
+On this example the pixel value is an integer that gives the Z-plane from which the projection pixel was taken. Several academic softwares generate this height-map (under varying names) on top of the projection. We list some of them at the end of this documentation.
+
+#### Running the analysis.
+
+For this example, we use the images that are present in the `samples` folder of this repository. They are a small excerpt of a 3D image of a drosophila pupal notum labelled for E-cadherin, and projected with the LocalZProjector (courtesy of Léo Valon, [Romain Levayer lab](https://research.pasteur.fr/en/team/cell-death-and-epithelial-homeostasis/), Institut Pasteur). 
+
+You must first load the two images:
+
+```matlab
+% Path to the images.
+root_folder = 'samples';
+
+mask_filename       = 'Segmentation-2.tif';
+I = imread( fullfile( root_folder, mask_filename ) );
+
+heightmap_filename   = 'HeightMap-2.tif';
+H = imread( fullfile( root_folder, heightmap_filename ) );
+```
+
+We can directly report all the measurements in physical units. To do so we need to specify what is the unit of length, and what is the pixel size in X & Y:
+
+```matlab
+pixel_size = 0.183; % µm
+units = 'µm';
+```
+
+The height-map of this dataset reports the *Z plane* of interest in the original 3D image. But we need to know the position in physical units, so we need to specify the pixel size in Z, or the voxel-depth:
+
+```matlab
+voxel_depth = 1.; % µm
+```
+
+If  your height-map already report the Z position and not the Z-plane, simply enter a value of `1` here.
+
+Finally we have some options to deal with tissue orientation and missing tissue. When we have `value = 0` in a region of the height-map, this signals that the projection is not defined at this location, for instance if the tissue is not imaged in these regions. We can then extrapolate the height-map there, and/or remove cells that touch such a region.
+
+```matlab
+% If this flag is set to true, the height-map will be extrapolated in regions where its value is 0.
+inpaint_zeros = true;
+% Remove objects that have a Z position equal to 0. Normally this
+% value reports objects that are out of the region-of-interest.
+prune_zeros = true;
+```
+
+Often inverted microscopes are used to image these tissues. When the sample is arranged on its back, this leads the bottom of the tissue surface to have large Z value (this is the case for the sample data). The following flag is a convenience that flips it for better display.
+
+```matlab
+% Invert z for plotting.
+invert_z = true;
+```
+
+Finally, we can run DeProj. Everything is done with a single call to:
+
+```matlab
+dpr = deproj.from_heightmap( ...
+    I, ...
+    H, ...
+    pixel_size, ...
+    voxel_depth, ...
+    units, ...
+    invert_z, ...    
+    inpaint_zeros, ...
+    prune_zeros );
+```
+
+It can take some time, depending on the size of the images. You should see something like this in the MATLAB console:
+
+```
+Opening mask image: Segmentation-2.tif
+Opening height-map image: HeightMap-2.tif
+Converting mask to objects.
+Converted a 282 x 508 mask in 1.2 seconds. Found 426 objects and 1840 junctions.
+Typical object scale: 10.1 pixels or 1.84 µm.
+Collecting Z coordinates.
+Done in 0.1 seconds.
+Removed 0 junctions at Z=0.
+Removed 0 objects touching these junctions.
+Computing tissue local curvature.
+Computing morphological descriptors of all objects.
+Done in 3.4 seconds.
+```
+
+What you get out this process is a `deproj` object:
+
+```matlab
+>> dpr
+
+dpr = 
+
+  deproj with properties:
+
+          epicells: [426×1 epicell]
+    junction_graph: [1×1 graph]
+             units: 'µm'
+```
+
+It manages mainly a collection of `epicell` objects, that store the data for one cell:
+
+```matlab
+>> o = dpr.epicells(4)
+
+o = 
+
+  epicell with properties:
+
+                 boundary: [26×3 single]
+                   center: [2.4705 11.1826 3.1008]
+             junction_ids: [5×1 double]
+                     area: 8.0176
+                perimeter: 12.5227
+             euler_angles: [-2.0734 0.4195 -0.2500]
+               curvatures: [0.0110 -4.8103e-05 0.0240 -0.0020]
+              ellipse_fit: [2.2284 11.1114 3.1008 2.3848 1.1178 0.4528]
+             eccentricity: 0.8834
+           proj_direction: 1.2539
+         uncorrected_area: 7.3173
+    uncorrected_perimeter: 12.1116
+                       id: 4
+```
+
+We give the definition and details about these properties later in this document.
+
+The `deproj` object can be exported to a MATLAB table:
+
+```matlab
+>> T = dpr.to_table;
+>> head(T)
+
+ans =
+
+  8×23 table
+
+    id      xc        yc        zc        area     perimeter    euler_alpha    ....
+    __    ______    ______    _______    ______    _________    ___________    ....
+
+    1     1.3039    22.669    0.61254     2.507     7.2365        0.71603      ....  
+    2     2.4739    23.827    0.66689    8.0899     11.849        0.90395      ....  
+    3     3.5615    3.6656     5.0947    12.317     15.599        -2.0397      .... 
+    4     2.4705    11.183     3.1008    8.0176     12.523        -2.0734      .... 
+    5     2.6884    26.749    0.24663     5.141     9.1999        -2.1016      .... 
+    6     3.6096    14.773     2.7521    13.812     16.114        -2.1033      .... 
+    7     5.0077    8.8491     4.6461    40.057       26.8        -2.0163      .... 
+    8     3.9601    29.361    0.22428    7.6378     11.323        -2.0704      .... 
+```
+
+then saved to a `csv` or Excel file:
+
+```matlab
+dpr.to_file( 'table.csv' )
+dpr.to_file( 'table.xlsx' )
+```
+
+![ExampleExport](/Users/tinevez/Development/Matlab/DeProj/static/ExampleExport.png)
+
+It can also be used to generate customisable plots. Several convenience methods are there:
+
+```matlab
+>> dpr.plot_sizes
+```
+
+![ExampleResults_fig1a_CellSize](/Users/tinevez/Development/Matlab/DeProj/static/ExampleResults_fig1a_CellSize.png)
+
+## Appendix.
+
+### Projection tools that yields the height-map.
+
+DeProj requires the height-map along with the segmentation of the projection, in order t "deproject" the cells onto the actual tissue surface. Here are some of the open-source projection tool that can return this output:
+
+-  [LocalZProjector](https://gitlab.pasteur.fr/iah-public/localzprojector). DeProj is the component part of the DProj toolbox, and LocalZProjector is the first one. It can generate a hight-map that can directly be used by DeProj.
+- [StackFocuser](https://imagej.nih.gov/ij/plugins/stack-focuser.html), an ImageJ plugin.
+- [PreMosa](https://academic.oup.com/bioinformatics/article/33/16/2563/3104469), a standalone C++ software.
+- The [Extended-Depth-Of-Field](http://bigwww.epfl.ch/demo/edf/) ImageJ plugin. 
+- The [Min Cost Z Surface](https://imagej.net/Minimum_Cost_Z_surface_Projection) ImageJ plugin.
+- The [Smooth Manifold Extraction](https://github.com/biocompibens/SME) MATLAB tool (a Fiji version is also distributed) and its recent, faster implementation: [FastSME](https://github.com/Shihav/FastSME).
+
+### Segmentation tools for the projection.
 
 Several open-source tools can segment the projection and yield the cells contour or the mask displayed above. Some of them offer an intuitive user interface, allowing for immediate usage and user interaction. For instance:
 
