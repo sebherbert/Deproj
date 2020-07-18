@@ -14,7 +14,7 @@ addpath('./src')
 % Where are the images.
 root_folder = 'samples';
 
-% You can proovide directly the segmentation results as a mask image, and
+% You can provide directly the segmentation results as a mask image, and
 % the code below will convert it into a list of objects.
 % For this to work, the mask image must be an 'ImageJ' mask, that is: the
 % cell contours must be black (pixel value == 0) and the cell interiors
