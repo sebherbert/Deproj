@@ -1,6 +1,6 @@
 # DeProj metrics.
 
-We give here the list of metrics returned by DeProj and their definition.
+We give here the list of properties stored in the DeProj classes and their definition.
 
 [TOC]
 
@@ -30,8 +30,6 @@ o =
                        id: 4
 ```
 
-
-
 - The `deproj` class manages a collection of `epicell`s, and represent for instance the results of the analysis of a whole image.
 
 ```matlab
@@ -60,7 +58,7 @@ xlabel('x (µm)'), ylabel('y (µm)'), zlabel('z (µm)')
 axis equal
 ```
 
-<img src="static/BoundaryPlot.png" alt="BoundaryPlot" style="zoom:25%;" />
+<img src="static/BoundaryPlot.png" alt="BoundaryPlot"  width="400" />
 
 ### `center`
 
@@ -111,7 +109,7 @@ j =
 >> xlabel('x (µm)'), ylabel('y (µm)'), zlabel('z (µm)')
 ```
 
-<img src="static/BoundaryJunctionPlug.png" alt="BoundaryJunctionPlug" style="zoom:25%;" />
+<img src="static/BoundaryJunctionPlug.png" alt="BoundaryJunctionPlug" width="400" />
 
 ### `area`
 
@@ -183,5 +181,78 @@ The cell unique ID within a `deproj` instance. Strictly positive integers.
 
 ## The `deproj` class properties.
 
+A `deproj` instance has only 3 properties.
 
+### `epicells`
+
+A `N x 1` array of `epicell` instances. Each `epicell` represents a cell in the tissue. See above for its properties. The `id` property of an `epicell` corresponds to its index in this array.
+
+### `junction_graph`
+
+A undirected graph of junction connections.
+
+ A junction is a location on the tissue surface where at least 3 cells connect.
+
+ <img src="static/JunctionExample.png" alt="JunctionExample" width="300" />
+
+The graph stored in the `junction_graph` property is made of the junctions as nodes, and of their connection of edges. If two junctions are linked by an edge in this graph, it means that there is exactly one ridge between two cells that connects them.
+
+The nodes store their ID and the 3D position of their centroid, in physical units:
+
+WHY CENTROID
+
+```matlab
+>> g = dpr.junction_graph
+
+g = 
+
+  graph with properties:
+
+    Edges: [1329×1 table]
+    Nodes: [920×2 table]
+
+>> head(g.Nodes)
+
+ans =
+
+  8×2 table
+
+             Centroid              ID
+    ___________________________    __
+
+    0.366     23.424    0.36189    1 
+    0.732     19.581    0.98203    2 
+    0.732     24.705    0.19083    3 
+    1.098      4.575      3.898    4 
+    0.976     24.034     0.3217    5 
+    1.281     10.614     2.8064    6 
+    1.464      3.294     4.3027    7 
+    1.586     14.335     2.0956    8 
+```
+
+The edges simply store theirs source and target node ids:
+
+```matlab
+>> head(g.Edges)
+
+ans =
+
+  8×1 table
+
+    EndNodes
+    ________
+
+    1     5 
+    1    10 
+    3     5 
+    3    11 
+    4     7 
+    4    14 
+    5    16 
+    6    12 
+```
+
+Edges are undirected and there are no duplicates.
+
+We can use this junction graph to plot a topological representation of the segmentation results.
 
