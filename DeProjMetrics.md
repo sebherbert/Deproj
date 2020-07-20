@@ -1,4 +1,4 @@
-# DeProj metrics.
+# DeProj output and properties.
 
 We give here the list of properties stored in the DeProj classes and their definition.
 
@@ -68,7 +68,7 @@ The cell center in physical coordinates. `1 x 3` array.
 
 The list of indices of junctions that this cell touches.
 
-You can notice that a `deproj` instance has a `junction_graph` property. This is the graph of the junctions in the tissues. A junction is a location on the tissue surface where at least 3 cells connect. We give more details the next paragraph on `deproj` properties.
+You can notice that a `deproj` instance has a `junction_graph` property. This is the graph of the junctions in the tissues. A junction is a location on the tissue surface where at least 3 cells connect. We give more details in the next section on `deproj` properties.
 
 ```matlab
 dpr = 
@@ -197,9 +197,7 @@ A undirected graph of junction connections.
 
 The graph stored in the `junction_graph` property is made of the junctions as nodes, and of their connection of edges. If two junctions are linked by an edge in this graph, it means that there is exactly one ridge between two cells that connects them.
 
-The nodes store their ID and the 3D position of their centroid, in physical units:
-
-WHY CENTROID
+The nodes store their ID and the 3D position of their centroid, in physical units. Because a junction can be made of several pixels, the `Centroid` matrix gives the X, Y, Z position of the pixels that compose a junction.
 
 ```matlab
 >> g = dpr.junction_graph
@@ -254,5 +252,48 @@ ans =
 
 Edges are undirected and there are no duplicates.
 
-We can use this junction graph to plot a topological representation of the segmentation results.
+We can use this junction graph to plot a topological representation of the segmentation results:
+
+```matlab
+% Path to the images.
+>> root_folder = 'samples';
+
+% Load the segmentation image.
+>> mask_filename       = 'Segmentation-2.tif';
+>> I = imread( fullfile( root_folder, mask_filename ) );
+
+% Because we want to display the image with the same coordinates
+% that of the junctions, we need to specify the pixel size and use
+% the 'XData' and 'YData' arguments of imshow.
+>> pixel_size = 0.183; % µm
+
+% Display the segmentation.
+>> imshow( ~I , [ 0 1 ], ...
+	'Border', 'tight',  ...
+	'Xdata', pixel_size * [ 1 size(I,2) ], ...
+	'YData', pixel_size * [ 1 size(I,1) ] )
+>> hold on
+
+% Get the junction graph (run the RunExample.m file first)
+g = dpr.junction_graph;
+
+% Display the junction graph. We use the graph builtin plot method.
+>> plot( g, ...
+    'XData', g.Nodes.Centroid(:,1), ...
+    'YData', g.Nodes.Centroid(:,2), ...
+    'LineWidth', 2, ...
+    'EdgeColor', 'b', ...
+    'EdgeAlpha', 1, ...
+    'Marker', 'o', ...
+    'MarkerSize', 4, ...
+    'NodeColor', 'r' )
+```
+
+![PlotJunctionGraph_1](static/PlotJunctionGraph_1.png)
+
+![PlotJunctionGraph_2](static/PlotJunctionGraph_2.png)
+
+### `units`
+
+This property simply stores the name of the physical unit of length that was specified at creation. It is useful to generate properly annotated figures.
 
