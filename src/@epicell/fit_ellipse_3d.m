@@ -1,7 +1,7 @@
 function [ f3d, v ] = fit_ellipse_3d( p, E, method )
 %FIT_ELLIPSE_3D Fit a 2D ellipse to a set of 3D points.
-%   The fit requires (or compute) the Euler angles of the plane fitted
-%   through the opints, so that we can project them on this plane. We then
+%   The fit requires (or computes) the Euler angles of the plane fitted
+%   through the points, so that we can project them on this plane. We then
 %   make a 2D ellipse fit on the projected points. This turns to be much
 %   more robust than a 3D fit, and also closely match our configuration.
 %
