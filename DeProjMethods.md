@@ -222,7 +222,7 @@ The `scale_bar_length` parameter specifies what should be the length (in physica
 
 `[ hf, ax1, ax2, ax3 ] = plot_fit_plane( obj, scale_bar_length )`
 
-Generate a figure with the local plane orientation for each cell. This orientation is given as 3 Euler angles in the [ZX'Z'' convention](https://en.wikipedia.org/wiki/Euler_angles#Chained_rotations_equivalence). 
+Generate a figure with the local plane orientation for each cell. This plane is the oblique plane that is tangent, or as close as possible, to the points on the cell boundary. Its orientation is given as the **3 Euler angles** in the [ZX'Z'' convention](https://en.wikipedia.org/wiki/Euler_angles#Chained_rotations_equivalence). 
 
 - The first one, `alpha` is the orientation of the cell plane (top panel below). As an analogy, imaging you are facing a hill, the slope going up. The direction (south, west…) in which the slope is the largest is given by the angle `alpha`. On these figures we wrap the angle between 0º and 180º to and because of MATLAB convention, this angle is measured counterclockwise from the Y axis (so 90º corresponds to a slope going up in the east-west direction).
 - The second one, `beta` measures the slope of this plane with XY plane (middle panel). A value of 0º indicates that the cell plane is parallel to XY. 
@@ -234,7 +234,80 @@ Generate a figure with the local plane orientation for each cell. This orientati
 
 ![ExampleResults_fig2_EulerAngles](/Users/tinevez/Development/Matlab/DeProj/static/ExampleResults_fig2_EulerAngles.png)
 
+#### `plot_fit_ellipse`
+
+`[ hf, he ] = plot_fit_ellipse( obj, scale_bar_length )`
+
+Plot the 2D ellipses on the 3D tissue surface.
+
+The ellipses are plotted in 3D, with the semi-major axis identified by a line. They are coloured by their orientation (projected on the XY plane). The output arguments are respectively `hf` the handle to the figure created and `he` the list of handles to the ellipse and lines created.
+
+```matlab
+>> dpr.plot_fit_ellipse;
+```
+
+![ExampleResults_fig3_EllipseFit](static/ExampleResults_fig3_EllipseFit.png)
+
+#### `plot_curvatures`
+
+`[ hf, ax1, ax2, ax3 ] = plot_curvatures( obj, scale_bar_length )`
+
+Generate a figure with the local curvature for a collection of epicells. The output arguments are respectively `hf` the handle to the figure created and the 3 handles to the axes created from top to bottom.
+
+DeProj computes the [mean curvature](https://en.wikipedia.org/wiki/Mean_curvature), the [Gaussian curvature](https://en.wikipedia.org/wiki/Gaussian_curvature) and the [principle curvatures](https://en.wikipedia.org/wiki/Principal_curvature), but this plot only includes the mean curvature and the principal curvatures (they have the same units). See the description of these properties in the [documentation on properties](DeProjProperties.md).
+
+```matlab
+>> dpr.plot_curvatures;
+```
+
+![ExampleResults_fig4_LocalCurvature](static/ExampleResults_fig4_LocalCurvature.png)
+
+#### `plot_distorsions`
+
+`[ hf, ax1, ax2 ] = plot_distorsions( obj, scale_bar_length )`
+
+Generate a figure with the error on uncorrected cells area and perimeter.
+
+#### `add_plot_id`
+
+`hts = add_plot_id( obj, ax )`
+
+Add the epicell ids to the specified plot axes `ax`.
+
+```matlab
+>> [ hf, ax1, ax2 ] = dpr.plot_sizes;
+>> dpr.add_plot_id( ax1 );
+```
+
+![PlotSizeWithIDs](static/PlotSizeWithIDs.png)
+
 ### Secondary `deproj` methods.
+
+These secondary methods are used by the methods described above. Feel free to reuse them in your post-analysis pipelines.
+
+#### `add_plot_variable`
+
+`hts = add_plot_variable( obj, values, ax )`
+
+Plots the cell boundaries as patches, colored by the specified values.
+
+This method generates the colored panels of the figures above. It takes all the cell boundaries, plot each of them as a patch, and color them according to the values in the `values` array. The 3rd input arguments `ax` is not optional and specifies the handle of the axes to draw the cells in. The output argument `hts` is the list of handles to the patch objects created.
+
+All the `add_plot_*` methods derive from this one.
+
+#### `add_ellipse_variable`
+
+`hts = add_ellipse_variable( obj, values, cmap, ax )`
+
+This method does the same thing that the one described above, but plot the cells as their corresponding 2D ellipse. The third argument required is `camp` the colormap to use for colouring. 
+
+#### Static method `cmap_seismic`
+
+A colormap that goes from dark red to dark blue with white in the middle, used in the local curvature figure.
+
+#### Static method `compute_curvatures`
+
+Routine used to compute the local curvatures.
 
 ## The `epicell` class methods.
 
