@@ -1,5 +1,5 @@
 function [ hf, ax1, ax2, ax3 ] = plot_curvatures( obj, scale_bar_length )
-%PLOT_CURVATURES Figure with the local curvaure for a collection of epicells.
+%PLOT_CURVATURES Figure with the local curvature for a collection of epicells.
 
     if nargin < 2
         scale_bar_length = 10;
