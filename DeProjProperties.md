@@ -2,7 +2,28 @@
 
 We give here the list of properties stored in the DeProj classes and their definition.
 
-[TOC]
+**Table of Contents**
+
+   * [DeProj output and properties.](#deproj-output-and-properties)
+      * [The core classes: deproj and epicell.](#the-core-classes-deproj-and-epicell)
+      * [The epicell class properties.](#the-epicell-class-properties)
+         * [boundary](#boundary)
+         * [center](#center)
+         * [junction_ids](#junction_ids)
+         * [area](#area)
+         * [perimeter](#perimeter)
+         * [euler_angles](#euler_angles)
+         * [curvatures](#curvatures)
+         * [ellipse_fit](#ellipse_fit)
+         * [eccentricity](#eccentricity)
+         * [proj_direction](#proj_direction)
+         * [uncorrected_area](#uncorrected_area)
+         * [uncorrected_perimeter](#uncorrected_perimeter)
+         * [id](#id)
+      * [The deproj class properties.](#the-deproj-class-properties)
+         * [epicells](#epicells)
+         * [junction_graph](#junction_graph)
+         * [units](#units)
 
 ## The core classes: `deproj` and `epicell`.
 
