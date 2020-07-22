@@ -328,6 +328,12 @@ It can also be used to generate customisable plots. Several convenience methods 
 
 ![ExampleResults_fig1a_CellSize](static/ExampleResults_fig1a_CellSize.png)
 
+## More documentation.
+
+The file [DeProjProperties.md](DeProjProperties.md) documents the properties you can find in the analysis results.
+
+The file [DeProjMethods.md](DeProjMethods.md) documents the methods you can run with the objects returned by the analysis.
+
 ## Appendix.
 
 ### Projection tools that yields the height-map.
