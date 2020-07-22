@@ -34,17 +34,17 @@ You need two images as input.
 
 The **segmentation mask image** is the results of the segmentation step, and must be a black and white image where each object is white and separated from its neighbor by a black ridge. Importantly the ridge must be connected using 8-connectivity. For instance, this is good (the ridges can be connected by the pixel diagonals):
 
-![img](/Users/tinevez/Development/Matlab/DeProj/static/8-connectivity.png)
+![img](static/8-connectivity.png)
 
 
 
 The following is **not good** (the ridges only move east west north and south):
 
-![img](/Users/tinevez/Development/Matlab/DeProj/static/4-connectivity.png)The height-map.The height-map is an image of the exact same size that the segmentation image, and for which the pixel value reports the Z position of the tissue surface. For instance:
+![img](static/4-connectivity.png)The height-map.The height-map is an image of the exact same size that the segmentation image, and for which the pixel value reports the Z position of the tissue surface. For instance:
 
-![img](/Users/tinevez/Development/Matlab/DeProj/static/HeightMap-2.png)
+![img](static/HeightMap-2.png)
 
-On this example the pixel value is an integer that gives the Z-plane from which the projection pixel was taken. 
+On this example the pixel value is a float number that gives the Z position from which the projection pixel was taken. 
 
 We now explain the meaning of other parameters in an example using the images that are present in the `samples` folder of this repository. They are a small excerpt of a 3D image of a drosophila pupal notum labelled for E-cadherin, and projected with the LocalZProjector (courtesy of Léo Valon, [Romain Levayer lab](https://research.pasteur.fr/en/team/cell-death-and-epithelial-homeostasis/), Institut Pasteur). 
 
@@ -202,7 +202,7 @@ dpr.to_file( 'table.csv' )
 dpr.to_file( 'table.xlsx' )
 ```
 
-![ExampleExport](/Users/tinevez/Development/Matlab/DeProj/static/ExampleExport.png)
+![ExampleExport](static/ExampleExport.png)
 
 #### `plot_sizes`
 
@@ -216,7 +216,7 @@ The `scale_bar_length` parameter specifies what should be the length (in physica
 >> dpr.plot_sizes
 ```
 
-![ExampleResults_fig1a_CellSize](/Users/tinevez/Development/Matlab/DeProj/static/ExampleResults_fig1a_CellSize.png)
+![ExampleResults_fig1a_CellSize](static/ExampleResults_fig1a_CellSize.png)
 
 #### `plot_fit_plane`
 
@@ -232,7 +232,7 @@ Generate a figure with the local plane orientation for each cell. This plane is 
 >> dpr.plot_fit_plane
 ```
 
-![ExampleResults_fig2_EulerAngles](/Users/tinevez/Development/Matlab/DeProj/static/ExampleResults_fig2_EulerAngles.png)
+![ExampleResults_fig2_EulerAngles](static/ExampleResults_fig2_EulerAngles.png)
 
 #### `plot_fit_ellipse`
 
