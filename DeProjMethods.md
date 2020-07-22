@@ -4,7 +4,40 @@ We document here the methods of the two DeProj classes `deproj` and `epicell`. W
 
 But the really important methods are those who create a `deproj` analysis results from the images. You can directly jump to the `deproj.from_heightmap` method.
 
-[TOC]
+**Table of Contents**
+
+   * [DeProj methods.](#deproj-methods)
+      * [The deproj class methods.](#the-deproj-class-methods)
+         * [Main deproj methods.](#main-deproj-methods)
+            * [Static method from_heightmap](#static-method-from_heightmap)
+            * [to_table](#to_table)
+            * [to_file](#to_file)
+            * [plot_sizes](#plot_sizes)
+            * [plot_fit_plane](#plot_fit_plane)
+            * [plot_fit_ellipse](#plot_fit_ellipse)
+            * [plot_curvatures](#plot_curvatures)
+            * [plot_distorsions](#plot_distorsions)
+            * [add_plot_id](#add_plot_id)
+         * [Secondary deproj methods.](#secondary-deproj-methods)
+            * [add_plot_variable](#add_plot_variable)
+            * [add_ellipse_variable](#add_ellipse_variable)
+            * [Static method cmap_seismic](#static-method-cmap_seismic)
+            * [Static method compute_curvatures](#static-method-compute_curvatures)
+      * [The epicell class methods.](#the-epicell-class-methods)
+         * [Main epicell methods.](#main-epicell-methods)
+         * [Secondary epicell methods.](#secondary-epicell-methods)
+            * [plot_contour_2d](#plot_contour_2d)
+            * [plot_ellipse_2d](#plot_ellipse_2d)
+            * [plot_contour_3d](#plot_contour_3d)
+            * [plot_ellipse_3d](#plot_ellipse_3d)
+            * [get_ellipse_points](#get_ellipse_points)
+            * [plot_patch_2d](#plot_patch_2d)
+            * [plot_patch_3d](#plot_patch_3d)
+            * [Static method euleurZXZ2rot](#static-method-euleurzxz2rot)
+            * [Static method rot2eulerZXZ](#static-method-rot2eulerzxz)
+            * [Static method fit_ellipse_2d](#static-method-fit_ellipse_2d)
+            * [Static method fit_ellipse_3d](#static-method-fit_ellipse_3d)
+
 
 ## The `deproj` class methods.
 
