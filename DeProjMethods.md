@@ -40,7 +40,9 @@ The **segmentation mask image** is the results of the segmentation step, and mus
 
 The following is **not good** (the ridges only move east west north and south):
 
-![img](static/4-connectivity.png)The height-map.The height-map is an image of the exact same size that the segmentation image, and for which the pixel value reports the Z position of the tissue surface. For instance:
+![img](static/4-connectivity.png)
+
+The **height-map** is an image of the exact same size that the segmentation image, and for which the pixel value reports the Z position of the tissue surface. For instance:
 
 ![img](static/HeightMap-2.png)
 
