@@ -2,7 +2,25 @@
 
 DeProj is a MATLAB app made to yield accurate morphological measurements on cells in epithelia or tissues.
 
-[TOC]
+**Table of Contents**
+
+   * [DeProj.](#deproj)
+      * [What is DeProj useful for.](#what-is-deproj-useful-for)
+         * [Measuring cell morphologies on 2D projections.](#measuring-cell-morphologies-on-2d-projections)
+         * [Projection artefacts.](#projection-artefacts)
+      * [How to use DeProj.](#how-to-use-deproj)
+         * [Requirements.](#requirements)
+         * [Installation.](#installation)
+         * [Running the example.](#running-the-example)
+      * [Running DeProj from MATLAB prompt.](#running-deproj-from-matlab-prompt)
+         * [From a segmentation mask and a height-map.](#from-a-segmentation-mask-and-a-height-map)
+            * [The segmentation mask.](#the-segmentation-mask)
+            * [The height-map.](#the-height-map)
+            * [Running the analysis.](#running-the-analysis)
+      * [More documentation.](#more-documentation)
+      * [Appendix.](#appendix)
+         * [Projection tools that yields the height-map.](#projection-tools-that-yields-the-height-map)
+         * [Segmentation tools for the projection.](#segmentation-tools-for-the-projection)
 
 ## What is DeProj useful for.
 
